@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- res/values/styles.xml -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Use white for the primary color, which is used for the ActionBar background -->
+        <item name="colorPrimary">@android:color/white</item>
+        <item name="colorPrimaryDark">@android:color/white</item>
+        <!-- Define your accent color as needed -->
+        <item name="colorAccent">@color/colorAccent</item>
+        <!-- Set the default color for action icons and other controls to black -->
+        <item name="android:colorControlNormal">@android:color/black</item>
+        <!-- Apply our custom ActionBar style -->
+        <item name="actionBarStyle">@style/MyActionBar</item>
+    </style>
+
+    <style name="MyActionBar" parent="Widget.AppCompat.Light.ActionBar.Solid">
+        <!-- Set the ActionBar background to white -->
+        <item name="android:background">@android:color/white</item>
+        <!-- Set a custom title text appearance -->
+        <item name="titleTextStyle">@style/MyActionBarTitleText</item>
+    </style>
+
+    <style name="MyActionBarTitleText" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <!-- Set the ActionBar title text color to black -->
+        <item name="android:textColor">@android:color/black</item>
+    </style>
+</resources>

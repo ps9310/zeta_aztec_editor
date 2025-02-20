@@ -17,7 +17,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  final _zetaAztecEditorPlugin = ZetaAztecEditor();
 
   @override
   void initState() {
@@ -31,7 +30,7 @@ class _MyAppState extends State<MyApp> {
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     try {
-      platformVersion = await _zetaAztecEditorPlugin.launch('Flutter');
+      platformVersion = await ZetaAztecEditor().launch('Flutter');
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
@@ -54,7 +53,15 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Column(
+            children: [
+              Text('Running on: $_platformVersion\n'),
+              ElevatedButton(
+                onPressed: initPlatformState,
+                child: const Text('Get Text'),
+              ),
+            ],
+          ),
         ),
       ),
     );
