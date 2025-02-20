@@ -117,7 +117,7 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
     }
 
 
-    protected lateinit var aztec: Aztec
+    private lateinit var aztec: Aztec
     private lateinit var mediaFile: String
     private lateinit var mediaPath: String
 
@@ -360,6 +360,7 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
         val toolbar = findViewById<AztecToolbar>(R.id.formatting_toolbar)
 
         visualEditor.enableSamsungPredictiveBehaviorOverride()
+        visualEditor.setBackgroundColor(defaultAppBarColor)
         visualEditor.setTextAppearance(android.R.style.TextAppearance)
         toolbar.setBackgroundColor(appBarColor)
 
