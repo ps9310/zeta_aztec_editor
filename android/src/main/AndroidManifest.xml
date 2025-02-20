@@ -1,11 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Required for downloading images -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Required for adding media and requested at runtime -->
+    <uses-permission
+        android:name="android.permission.CAMERA"
+        tools:ignore="PermissionImpliesUnsupportedChromeOsHardware" />
+    <!-- Allows for storing and retrieving screenshots, photos, videos and audios -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application>
         <activity
             android:name=".AztecEditorActivity"
-            android:theme="@style/AppTheme"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/EditorLightTheme" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+
+        </provider>
     </application>
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+        </intent>
+        <!-- required for Android 11 (API level 30) or higher -->
+        <package android:name="com.wordpress.aztec" />
+    </queries>
 </manifest>

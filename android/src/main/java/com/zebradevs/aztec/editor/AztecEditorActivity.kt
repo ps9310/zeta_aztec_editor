@@ -29,20 +29,18 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
-import android.widget.EditText
 import android.widget.PopupMenu
 import android.widget.ToggleButton
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.forEach
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.ImageUtils
 import org.wordpress.android.util.PermissionUtils
@@ -70,18 +68,11 @@ import org.wordpress.aztec.plugins.shortcodes.extensions.ATTRIBUTE_VIDEOPRESS_HI
 import org.wordpress.aztec.plugins.shortcodes.extensions.updateVideoPressThumb
 import org.wordpress.aztec.plugins.wpcomments.HiddenGutenbergPlugin
 import org.wordpress.aztec.plugins.wpcomments.WordPressCommentsPlugin
-import org.wordpress.aztec.plugins.wpcomments.toolbar.MoreToolbarButton
-import org.wordpress.aztec.plugins.wpcomments.toolbar.PageToolbarButton
-import org.wordpress.aztec.source.SourceViewEditText
 import org.wordpress.aztec.toolbar.AztecToolbar
 import org.wordpress.aztec.toolbar.IAztecToolbarClickListener
-import org.wordpress.aztec.toolbar.ToolbarAction
-import org.wordpress.aztec.toolbar.ToolbarItems
-import org.wordpress.aztec.toolbar.ToolbarItems.BasicLayout
-import org.wordpress.aztec.toolbar.ToolbarItems.PLUGINS
-import org.wordpress.aztec.util.AztecLog
 import org.xml.sax.Attributes
 import java.io.File
+import java.util.Locale
 import java.util.Random
 
 
@@ -93,71 +84,27 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
 
     companion object {
         const val REQUEST_CODE: Int = 9001
+        private const val MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE: Int = 1001
+        private const val MEDIA_CAMERA_VIDEO_PERMISSION_REQUEST_CODE: Int = 1002
+        private const val MEDIA_PHOTOS_PERMISSION_REQUEST_CODE: Int = 1003
+        private const val MEDIA_VIDEOS_PERMISSION_REQUEST_CODE: Int = 1004
+        private const val REQUEST_MEDIA_CAMERA_PHOTO: Int = 2001
+        private const val REQUEST_MEDIA_CAMERA_VIDEO: Int = 2002
+        private const val REQUEST_MEDIA_PHOTO: Int = 2003
+        private const val REQUEST_MEDIA_VIDEO: Int = 2004
 
-        fun createIntent(activity: Activity, initialHtml: String?): Intent {
+        fun createIntent(
+            activity: Activity,
+            title: String,
+            initialHtml: String?,
+            theme: String?
+        ): Intent {
             return Intent(activity, AztecEditorActivity::class.java).apply {
+                putExtra("title", title)
                 putExtra("initialHtml", initialHtml)
+                putExtra("theme", theme)
             }
         }
-
-        private val HEADING =
-            "<h1>Heading 1</h1>" + "<h2>Heading 2</h2>" + "<h3>Heading 3</h3>" + "<h4>Heading 4</h4>" + "<h5>Heading 5</h5>" + "<h6>Heading 6</h6>"
-        private val BOLD = "<b>Bold</b><br>"
-        private val ITALIC = "<i style=\"color:darkred\">Italic</i><br>"
-        private val UNDERLINE = "<u style=\"color:lime\">Underline</u><br>"
-        private val BACKGROUND =
-            "<span style=\"background-color:#005082\">BACK<b>GROUND</b></span><br>"
-        private val STRIKETHROUGH =
-            "<s style=\"color:#ff666666\" class=\"test\">Strikethrough</s><br>" // <s> or <strike> or <del>
-        private val ORDERED =
-            "<ol style=\"color:green\"><li>Ordered</li><li>should have color</li></ol>"
-        private val TASK_LIST =
-            "<ul type=\"task-list\">\n" + " <li><input type=\"checkbox\" class=\"task-list-item-checkbox\">Unchecked</li>\n" + " <li><input type=\"checkbox\" class=\"task-list-item-checkbox\" checked>Checked</li>\n" + "</ul>"
-        private val ORDERED_WITH_START =
-            "<h4>Start in 10 List:</h4>" + "<ol start=\"10\">\n" + "    <li>Ten</li>\n" + "    <li>Eleven</li>\n" + "    <li>Twelve</li>\n" + "</ol>"
-        private val ORDERED_REVERSED =
-            "<h4>Reversed List:</h4>" + "<ol reversed>\n" + "    <li>Three</li>\n" + "    <li>Two</li>\n" + "    <li>One</li>\n" + "</ol>"
-        private val ORDERED_REVERSED_WITH_START =
-            "<h4>Reversed Start in 10 List:</h4>" + "<ol reversed start=\"10\">\n" + "    <li>Ten</li>\n" + "    <li>Nine</li>\n" + "    <li>Eight</li>\n" + "</ol>"
-        private val ORDERED_REVERSED_NEGATIVE_WITH_START =
-            "<h4>Reversed Start in 1 List:</h4>" + "<ol reversed start=\"1\">\n" + "    <li>One</li>\n" + "    <li>Zero</li>\n" + "    <li>Minus One</li>\n" + "</ol>"
-        private val ORDERED_REVERSED_WITH_START_IDENT =
-            "<h4>Reversed Start in 6 List:</h4>" + "<ol reversed>" + "   <li>Six</li>" + "   <li>Five</li>" + "   <li>Four</li>" + "   <li>Three</li>" + "   <li>Two</li>" + "   <li>One<ol>" + "   <li>One</li>" + "   <li>Two</li>" + "   <li>Three</li>" + "   <li>Four</li>" + "   <li>Five</li>" + "   <li>Six</li>" + "   <li>Seven</li> " + "   </ol></li></ol>"
-        private val LINE = "<hr />"
-        private val UNORDERED =
-            "<ul><li style=\"color:darkred\">Unordered</li><li>Should not have color</li></ul>"
-        private val QUOTE = "<blockquote>Quote</blockquote>"
-        private val LINK =
-            "<a href=\"https://github.com/wordpress-mobile/WordPress-Aztec-Android\">Link</a><br>"
-        private val UNKNOWN = "<iframe class=\"classic\">Menu</iframe><br>"
-        private val COMMENT = "<!--Comment--><br>"
-        private val COMMENT_MORE = "<!--more--><br>"
-        private val COMMENT_PAGE = "<!--nextpage--><br>"
-        private val HIDDEN =
-            "<span></span>" + "<div class=\"first\">" + "    <div class=\"second\">" + "        <div class=\"third\">" + "            Div<br><span><b>Span</b></span><br>Hidden" + "        </div>" + "        <div class=\"fourth\"></div>" + "        <div class=\"fifth\"></div>" + "    </div>" + "    <span class=\"second last\"></span>" + "</div>" + "<br>"
-        private val GUTENBERG_CODE_BLOCK =
-            "<!-- wp:core/image {\"id\":316} -->\n" + "<figure class=\"wp-block-image\"><img src=\"https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/WordPress_blue_logo.svg/1200px-WordPress_blue_logo.svg.png\" alt=\"\" />\n" + "  <figcaption>The WordPress logo!</figcaption>\n" + "</figure>\n" + "<!-- /wp:core/image -->"
-        private val PREFORMAT =
-            "<pre>" + "when (person) {<br>" + "    MOCTEZUMA -> {<br>" + "        print (\"friend\")<br>" + "    }<br>" + "    CORTES -> {<br>" + "        print (\"foe\")<br>" + "    }<br>" + "}" + "</pre>"
-        private val CODE = "<code>if (value == 5) printf(value)</code><br>"
-        private val IMG =
-            "[caption align=\"alignright\"]<img src=\"https://examplebloge.files.wordpress.com/2017/02/3def4804-d9b5-11e6-88e6-d7d8864392e0.png\" />Caption[/caption]"
-        private val EMOJI = "&#x1F44D;"
-        private val NON_LATIN_TEXT = "测试一个"
-        private val LONG_TEXT =
-            "<br><br>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
-        private val VIDEO =
-            "[video src=\"https://examplebloge.files.wordpress.com/2017/06/d7d88643-88e6-d9b5-11e6-92e03def4804.mp4\"]"
-        private val AUDIO =
-            "[audio src=\"https://upload.wikimedia.org/wikipedia/commons/9/94/H-Moll.ogg\"]"
-        private val VIDEOPRESS = "[wpvideo OcobLTqC]"
-        private val VIDEOPRESS_2 = "[wpvideo OcobLTqC w=640 h=400 autoplay=true html5only=true3]"
-        private val QUOTE_RTL = "<blockquote>לְצַטֵט<br>same quote but LTR</blockquote>"
-        private val MARK =
-            "<p>Donec ipsum dolor, <mark style=\"color:#ff0000\">tempor sed</mark> bibendum <mark style=\"color:#1100ff\">vita</mark>.</p>"
-
-        private val EXAMPLE =
-            IMG + HEADING + BOLD + ITALIC + UNDERLINE + BACKGROUND + STRIKETHROUGH + TASK_LIST + ORDERED + ORDERED_WITH_START + ORDERED_REVERSED + ORDERED_REVERSED_WITH_START + ORDERED_REVERSED_NEGATIVE_WITH_START + ORDERED_REVERSED_WITH_START_IDENT + LINE + UNORDERED + QUOTE + PREFORMAT + LINK + HIDDEN + COMMENT + COMMENT_MORE + COMMENT_PAGE + CODE + UNKNOWN + EMOJI + NON_LATIN_TEXT + LONG_TEXT + VIDEO + VIDEOPRESS + VIDEOPRESS_2 + AUDIO + GUTENBERG_CODE_BLOCK + QUOTE_RTL + MARK
 
         private val isRunningTest: Boolean by lazy {
             try {
@@ -169,14 +116,6 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
         }
     }
 
-    private val MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE: Int = 1001
-    private val MEDIA_CAMERA_VIDEO_PERMISSION_REQUEST_CODE: Int = 1002
-    private val MEDIA_PHOTOS_PERMISSION_REQUEST_CODE: Int = 1003
-    private val MEDIA_VIDEOS_PERMISSION_REQUEST_CODE: Int = 1004
-    private val REQUEST_MEDIA_CAMERA_PHOTO: Int = 2001
-    private val REQUEST_MEDIA_CAMERA_VIDEO: Int = 2002
-    private val REQUEST_MEDIA_PHOTO: Int = 2003
-    private val REQUEST_MEDIA_VIDEO: Int = 2004
 
     protected lateinit var aztec: Aztec
     private lateinit var mediaFile: String
@@ -351,14 +290,43 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val themeParam = intent.getStringExtra("theme") ?: "system"
+        val initialHtml = intent.getStringExtra("initialHtml")
+        val title = intent.getStringExtra("title")
+
+        when (themeParam.lowercase(Locale.getDefault())) {
+            "dark" -> {
+                setTheme(R.style.EditorDarkTheme)
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            }
+
+            "light" -> {
+                setTheme(R.style.EditorLightTheme)
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            }
+
+            else -> {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                setTheme(R.style.EditorDayNightTheme)
+            }
+        }
+
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_aztec_editor)
 
-        // Find the top toolbar and set it as the action bar
+        val isDarkMode = isDarkMode()
         val topToolbar: Toolbar = findViewById(R.id.top_toolbar)
-        topToolbar.setBackgroundColor(Color.WHITE)
-        topToolbar.setTitleTextColor(Color.BLACK)
+        val defaultAppBarColor = if (isDarkMode) Color.BLACK else Color.WHITE
+        val defaultAppBarTextColor = if (isDarkMode) Color.WHITE else Color.BLACK
+        val appBarColor = intent.getIntExtra("appBarColor", defaultAppBarColor)
+        val appBarTextColor = intent.getIntExtra("appBarTextColor", defaultAppBarTextColor)
+
+        topToolbar.setBackgroundColor(appBarColor)
+        topToolbar.setTitleTextColor(appBarTextColor)
         setSupportActionBar(topToolbar)
+
+        title?.let { supportActionBar?.title = it } ?: run { supportActionBar?.title = "" }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -383,23 +351,11 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
         }
 
         val visualEditor = findViewById<AztecText>(R.id.aztec)
-        val sourceEditor = findViewById<SourceViewEditText>(R.id.source)
         val toolbar = findViewById<AztecToolbar>(R.id.formatting_toolbar)
 
-        toolbar.setBackgroundColor(Color.WHITE)
-
         visualEditor.enableSamsungPredictiveBehaviorOverride()
-
-        visualEditor.externalLogger = object : AztecLog.ExternalLogger {
-            override fun log(message: String) {
-            }
-
-            override fun logException(tr: Throwable) {
-            }
-
-            override fun logException(tr: Throwable, message: String) {
-            }
-        }
+        visualEditor.setTextAppearance(android.R.style.TextAppearance)
+        toolbar.setBackgroundColor(appBarColor)
 
         val galleryButton = MediaToolbarGalleryButton(toolbar)
         galleryButton.setMediaToolbarButtonClickListener(object :
@@ -429,7 +385,7 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
             }
         })
 
-        aztec = Aztec.with(visualEditor, sourceEditor, toolbar, this)
+        aztec = Aztec.with(visualEditor, toolbar, this)
             .setImageGetter(GlideImageLoader(this))
             .setVideoThumbnailGetter(GlideVideoThumbnailLoader(this))
             .setOnImeBackListener(this)
@@ -441,8 +397,6 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
             .addOnMediaDeletedListener(this)
             .setOnVideoInfoRequestedListener(this)
             .addPlugin(WordPressCommentsPlugin(visualEditor))
-            .addPlugin(MoreToolbarButton(visualEditor))
-            .addPlugin(PageToolbarButton(visualEditor))
             .addPlugin(CaptionShortcodePlugin(visualEditor))
             .addPlugin(VideoShortcodePlugin())
             .addPlugin(AudioShortcodePlugin())
@@ -450,39 +404,38 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
             .addPlugin(galleryButton)
             .addPlugin(cameraButton)
 
-        // initialize the plugins, text & HTML
-        if (!isRunningTest) {
-            aztec.visualEditor.enableCrashLogging(object :
-                AztecExceptionHandler.ExceptionHandlerHelper {
-                override fun shouldLog(ex: Throwable): Boolean {
-                    return true
-                }
-            })
-            aztec.visualEditor.setCalypsoMode(false)
-            aztec.sourceEditor?.setCalypsoMode(false)
+        aztec.visualEditor.enableCrashLogging(object :
+            AztecExceptionHandler.ExceptionHandlerHelper {
+            override fun shouldLog(ex: Throwable): Boolean {
+                return true
+            }
+        })
 
-            aztec.visualEditor.setBackgroundSpanColor(
-                ContextCompat.getColor(
-                    this, org.wordpress.aztec.R.color.blue_dark
-                )
+        aztec.visualEditor.setCalypsoMode(false)
+        aztec.sourceEditor?.setCalypsoMode(false)
+
+        aztec.visualEditor.setBackgroundSpanColor(
+            ContextCompat.getColor(
+                this, org.wordpress.aztec.R.color.blue_dark
             )
+        )
 
-            aztec.sourceEditor?.displayStyledAndFormattedHtml(EXAMPLE)
+        aztec.addPlugin(CssUnderlinePlugin())
+        aztec.addPlugin(CssBackgroundColorPlugin())
+        aztec.addPlugin(BackgroundColorButton(visualEditor))
 
-            aztec.addPlugin(CssUnderlinePlugin())
-            aztec.addPlugin(CssBackgroundColorPlugin())
-            aztec.addPlugin(BackgroundColorButton(visualEditor))
-        }
+        aztec.visualEditor.fromHtml(initialHtml ?: "")
 
         if (savedInstanceState == null) {
-            if (!isRunningTest) {
-                aztec.visualEditor.fromHtml(EXAMPLE)
-            }
             aztec.initSourceEditorHistory()
         }
 
         invalidateOptionsHandler = Handler(Looper.getMainLooper())
         invalidateOptionsRunnable = Runnable { invalidateOptionsMenu() }
+    }
+
+    private fun isDarkMode(): Boolean {
+        return (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     }
 
     override fun onPause() {
@@ -545,7 +498,6 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
     }
 
     private fun hideActionBarIfNeeded() {
-
         val actionBar = supportActionBar
         if (actionBar != null && !isHardwareKeyboardPresent() && mHideActionBarOnSoftKeyboardUp && mIsKeyboardOpen && actionBar.isShowing) {
             actionBar.hide()
@@ -556,7 +508,6 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
      * Show the action bar if needed.
      */
     private fun showActionBarIfNeeded() {
-
         val actionBar = supportActionBar
         if (actionBar != null && !actionBar.isShowing) {
             actionBar.show()
@@ -584,13 +535,8 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
-        menu.let {
-            for (i in 0 until it.size()) {
-                val menuItem = it.getItem(i)
-                menuItem.icon?.setTint(Color.BLACK)
-            }
-        }
-
+        val menuIconColor = if (isDarkMode()) Color.WHITE else Color.BLACK
+        menu.forEach { it.icon?.setTint(menuIconColor) }
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -608,11 +554,23 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
                 aztec.sourceEditor?.redo()
             }
 
+            R.id.done -> {
+                doneEditing()
+            }
+
             else -> {
             }
         }
 
         return true
+    }
+
+    private fun doneEditing() {
+        val html = aztec.visualEditor.toHtml()
+        val intent = Intent()
+        intent.putExtra("html", html)
+        setResult(RESULT_OK, intent)
+        finish()
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {

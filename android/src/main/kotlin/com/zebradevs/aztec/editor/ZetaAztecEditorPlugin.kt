@@ -51,7 +51,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == AztecEditorActivity.REQUEST_CODE) {
             val result = if (resultCode == Activity.RESULT_OK) {
-                Result.success(data?.getStringExtra("result") ?: "")
+                Result.success(data?.getStringExtra("html") ?: "")
             } else {
                 Result.failure(Exception("Editor was cancelled"))
             }
@@ -66,14 +66,21 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
 
     override fun launch(
         initialHtml: String?,
-        config: EditorConfig?,
-        callback: (Result<String>) -> Unit
+        config: EditorConfig,
+        callback: (Result<String?>) -> Unit
     ) {
         runOnUi {
             activity?.let { activity ->
                 pendingResult = callback
+                val intent = AztecEditorActivity.createIntent(
+                    activity,
+                    title = config.title,
+                    initialHtml = initialHtml,
+                    theme = config.theme.toString()
+                )
+
                 activity.startActivityForResult(
-                    AztecEditorActivity.createIntent(activity, initialHtml),
+                    intent,
                     AztecEditorActivity.REQUEST_CODE
                 )
             }

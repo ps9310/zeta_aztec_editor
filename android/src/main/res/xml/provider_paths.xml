@@ -2,5 +2,5 @@
 <paths>
     <external-path
         name="external_files"
-        path="./aztec_editor_files" />
+        path="." />
 </paths>

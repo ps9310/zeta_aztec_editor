@@ -82,13 +82,27 @@ enum class ToolbarOptions(val raw: Int) {
   }
 }
 
+enum class Theme(val raw: Int) {
+  LIGHT(0),
+  DARK(1),
+  SYSTEM(2);
+
+  companion object {
+    fun ofRaw(raw: Int): Theme? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 /** Generated class from Pigeon that represents data sent in messages. */
 data class EditorConfig (
   val primaryColor: String? = null,
   val backgroundColor: String? = null,
   val textColor: String? = null,
   val fileExtensions: List<String>? = null,
-  val toolbarOptions: List<ToolbarOptions>? = null
+  val toolbarOptions: List<ToolbarOptions>? = null,
+  val title: String,
+  val theme: Theme
 )
  {
   companion object {
@@ -98,7 +112,9 @@ data class EditorConfig (
       val textColor = pigeonVar_list[2] as String?
       val fileExtensions = pigeonVar_list[3] as List<String>?
       val toolbarOptions = pigeonVar_list[4] as List<ToolbarOptions>?
-      return EditorConfig(primaryColor, backgroundColor, textColor, fileExtensions, toolbarOptions)
+      val title = pigeonVar_list[5] as String
+      val theme = pigeonVar_list[6] as Theme
+      return EditorConfig(primaryColor, backgroundColor, textColor, fileExtensions, toolbarOptions, title, theme)
     }
   }
   fun toList(): List<Any?> {
@@ -108,6 +124,8 @@ data class EditorConfig (
       textColor,
       fileExtensions,
       toolbarOptions,
+      title,
+      theme,
     )
   }
 }
@@ -120,6 +138,11 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
         }
       }
       130.toByte() -> {
+        return (readValue(buffer) as Long?)?.let {
+          Theme.ofRaw(it.toInt())
+        }
+      }
+      131.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           EditorConfig.fromList(it)
         }
@@ -133,8 +156,12 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
         stream.write(129)
         writeValue(stream, value.raw)
       }
-      is EditorConfig -> {
+      is Theme -> {
         stream.write(130)
+        writeValue(stream, value.raw)
+      }
+      is EditorConfig -> {
+        stream.write(131)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -145,7 +172,7 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
 
 /** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface AztecEditorApi {
-  fun launch(initialHtml: String?, config: EditorConfig?, callback: (Result<String>) -> Unit)
+  fun launch(initialHtml: String?, config: EditorConfig, callback: (Result<String?>) -> Unit)
 
   companion object {
     /** The codec used by AztecEditorApi. */
@@ -162,8 +189,8 @@ interface AztecEditorApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val initialHtmlArg = args[0] as String?
-            val configArg = args[1] as EditorConfig?
-            api.launch(initialHtmlArg, configArg) { result: Result<String> ->
+            val configArg = args[1] as EditorConfig
+            api.launch(initialHtmlArg, configArg) { result: Result<String?> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(wrapError(error))
