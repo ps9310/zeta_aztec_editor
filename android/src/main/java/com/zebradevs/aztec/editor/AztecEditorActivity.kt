@@ -324,7 +324,13 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
 
         topToolbar.setBackgroundColor(appBarColor)
         topToolbar.setTitleTextColor(appBarTextColor)
+        topToolbar.setSubtitleTextColor(appBarTextColor)
+
         setSupportActionBar(topToolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+        supportActionBar?.setDisplayShowTitleEnabled(true)
+        supportActionBar?.setHomeButtonEnabled(true)
 
         title?.let { supportActionBar?.title = it } ?: run { supportActionBar?.title = "" }
 
@@ -542,6 +548,10 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            android.R.id.home -> {
+                finish() // or onBackPressed()
+            }
+
             R.id.undo -> if (aztec.visualEditor.visibility == View.VISIBLE) {
                 aztec.visualEditor.undo()
             } else {

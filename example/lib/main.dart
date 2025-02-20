@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:zeta_aztec_editor/zeta_aztec_editor.dart';
+import 'package:zeta_aztec_editor/zeta_aztec_editor.dart' as editor;
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,23 +17,36 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
+  String _html = '''
+  <h3>Heading</h3>
+  <p>
+    A paragraph with <strong>strong</strong>, <em>emphasized</em>
+    and <span style="color: red">colored</span> text.
+  </p>
+  ''';
 
   @override
   void initState() {
     super.initState();
-    initPlatformState();
+    _launchEditor(editor.Theme.system);
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
+  Future<void> _launchEditor(editor.Theme theme) async {
+    String html;
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     try {
-      platformVersion = await ZetaAztecEditor().launch('Flutter');
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
+      html = await editor.ZetaAztecEditor().launch(
+            initialHtml: _html,
+            config: editor.EditorConfig(
+              theme: theme,
+              title: 'Add HTML',
+            ),
+          ) ??
+          '<p>Unknown</p>';
+    } on Exception {
+      html = '<p>Failed to get platform version.</p>';
     }
 
     // If the widget was removed from the tree while the asynchronous platform
@@ -41,7 +55,7 @@ class _MyAppState extends State<MyApp> {
     if (!mounted) return;
 
     setState(() {
-      _platformVersion = platformVersion;
+      _html = html;
     });
   }
 
@@ -52,16 +66,30 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Center(
-          child: Column(
-            children: [
-              Text('Running on: $_platformVersion\n'),
-              ElevatedButton(
-                onPressed: initPlatformState,
-                child: const Text('Get Text'),
+        body: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: HtmlWidget(
+                  _html,
+                  renderMode: RenderMode.listView,
+                ),
               ),
-            ],
-          ),
+            ),
+            ElevatedButton(
+              onPressed: () => _launchEditor(editor.Theme.light),
+              child: const Text('System theme editor'),
+            ),
+            ElevatedButton(
+              onPressed: () => _launchEditor(editor.Theme.light),
+              child: const Text('Light theme editor'),
+            ),
+            ElevatedButton(
+              onPressed: () => _launchEditor(editor.Theme.dark),
+              child: const Text('Dark theme editor'),
+            ),
+          ],
         ),
       ),
     );

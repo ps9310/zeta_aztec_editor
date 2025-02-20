@@ -52,6 +52,12 @@ enum ToolbarOptions {
   removeFormat,
 }
 
+enum Theme {
+  light,
+  dark,
+  system,
+}
+
 class EditorConfig {
   EditorConfig({
     this.primaryColor,
@@ -59,6 +65,8 @@ class EditorConfig {
     this.textColor,
     this.fileExtensions,
     this.toolbarOptions,
+    required this.title,
+    required this.theme,
   });
 
   String? primaryColor;
@@ -71,6 +79,10 @@ class EditorConfig {
 
   List<ToolbarOptions>? toolbarOptions;
 
+  String title;
+
+  Theme theme;
+
   Object encode() {
     return <Object?>[
       primaryColor,
@@ -78,6 +90,8 @@ class EditorConfig {
       textColor,
       fileExtensions,
       toolbarOptions,
+      title,
+      theme,
     ];
   }
 
@@ -89,23 +103,28 @@ class EditorConfig {
       textColor: result[2] as String?,
       fileExtensions: (result[3] as List<Object?>?)?.cast<String>(),
       toolbarOptions: (result[4] as List<Object?>?)?.cast<ToolbarOptions>(),
+      title: result[5]! as String,
+      theme: result[6]! as Theme,
     );
   }
 }
 
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
-
   @override
   void writeValue(WriteBuffer buffer, Object? value) {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    } else if (value is ToolbarOptions) {
+    }    else if (value is ToolbarOptions) {
       buffer.putUint8(129);
       writeValue(buffer, value.index);
-    } else if (value is EditorConfig) {
+    }    else if (value is Theme) {
       buffer.putUint8(130);
+      writeValue(buffer, value.index);
+    }    else if (value is EditorConfig) {
+      buffer.putUint8(131);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -115,10 +134,13 @@ class _PigeonCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 129:
+      case 129: 
         final int? value = readValue(buffer) as int?;
         return value == null ? null : ToolbarOptions.values[value];
-      case 130:
+      case 130: 
+        final int? value = readValue(buffer) as int?;
+        return value == null ? null : Theme.values[value];
+      case 131: 
         return EditorConfig.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -139,16 +161,16 @@ class AztecEditorApi {
 
   final String pigeonVar_messageChannelSuffix;
 
-  Future<String> launch(String? initialHtml, {EditorConfig? config}) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.zeta_aztec_editor.AztecEditorApi.launch$pigeonVar_messageChannelSuffix';
+  Future<String?> launch(String? initialHtml, {required EditorConfig config}) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.zeta_aztec_editor.AztecEditorApi.launch$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[initialHtml, config]);
-    final List<Object?>? pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
       throw _createConnectionError(pigeonVar_channelName);
     } else if (pigeonVar_replyList.length > 1) {
@@ -157,13 +179,8 @@ class AztecEditorApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return (pigeonVar_replyList[0] as String?);
     }
   }
 }
@@ -173,23 +190,18 @@ abstract class AztecFlutterApi {
 
   Future<String> onFileSelected(String filePath);
 
-  static void setUp(
-    AztecFlutterApi? api, {
-    BinaryMessenger? binaryMessenger,
-    String messageChannelSuffix = '',
-  }) {
+  static void setUp(AztecFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
     messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
     {
       final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
-          'dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected$messageChannelSuffix',
-          pigeonChannelCodec,
+          'dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected$messageChannelSuffix', pigeonChannelCodec,
           binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
           assert(message != null,
-              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected was null.');
+          'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_filePath = (args[0] as String?);
           assert(arg_filePath != null,
@@ -199,7 +211,7 @@ abstract class AztecFlutterApi {
             return wrapResponse(result: output);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
-          } catch (e) {
+          }          catch (e) {
             return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
           }
         });

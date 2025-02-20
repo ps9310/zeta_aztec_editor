@@ -53,18 +53,36 @@ enum ToolbarOptions {
   removeFormat,
 }
 
+enum Theme {
+  light,
+  dark,
+  system,
+}
+
 class EditorConfig {
-  String? primaryColor;
-  String? backgroundColor;
-  String? textColor;
-  List<String>? fileExtensions;
-  List<ToolbarOptions>? toolbarOptions;
+  final String? primaryColor;
+  final String? backgroundColor;
+  final String? textColor;
+  final List<String>? fileExtensions;
+  final List<ToolbarOptions>? toolbarOptions;
+  final String title;
+  final Theme theme;
+
+  EditorConfig({
+    required this.title,
+    required this.primaryColor,
+    required this.backgroundColor,
+    required this.textColor,
+    required this.fileExtensions,
+    required this.toolbarOptions,
+    this.theme = Theme.system,
+  });
 }
 
 @HostApi()
 abstract class AztecEditorApi {
   @async
-  String launch(String? initialHtml, {EditorConfig? config});
+  String? launch(String? initialHtml, {required EditorConfig config});
 }
 
 @FlutterApi()

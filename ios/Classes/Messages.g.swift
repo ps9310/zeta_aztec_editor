@@ -95,6 +95,12 @@ enum ToolbarOptions: Int {
   case removeFormat = 23
 }
 
+enum Theme: Int {
+  case light = 0
+  case dark = 1
+  case system = 2
+}
+
 /// Generated class from Pigeon that represents data sent in messages.
 struct EditorConfig {
   var primaryColor: String? = nil
@@ -102,6 +108,8 @@ struct EditorConfig {
   var textColor: String? = nil
   var fileExtensions: [String]? = nil
   var toolbarOptions: [ToolbarOptions]? = nil
+  var title: String
+  var theme: Theme
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -111,13 +119,17 @@ struct EditorConfig {
     let textColor: String? = nilOrValue(pigeonVar_list[2])
     let fileExtensions: [String]? = nilOrValue(pigeonVar_list[3])
     let toolbarOptions: [ToolbarOptions]? = nilOrValue(pigeonVar_list[4])
+    let title = pigeonVar_list[5] as! String
+    let theme = pigeonVar_list[6] as! Theme
 
     return EditorConfig(
       primaryColor: primaryColor,
       backgroundColor: backgroundColor,
       textColor: textColor,
       fileExtensions: fileExtensions,
-      toolbarOptions: toolbarOptions
+      toolbarOptions: toolbarOptions,
+      title: title,
+      theme: theme
     )
   }
   func toList() -> [Any?] {
@@ -127,6 +139,8 @@ struct EditorConfig {
       textColor,
       fileExtensions,
       toolbarOptions,
+      title,
+      theme,
     ]
   }
 }
@@ -141,6 +155,12 @@ private class MessagesPigeonCodecReader: FlutterStandardReader {
       }
       return nil
     case 130:
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return Theme(rawValue: enumResultAsInt)
+      }
+      return nil
+    case 131:
       return EditorConfig.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -153,8 +173,11 @@ private class MessagesPigeonCodecWriter: FlutterStandardWriter {
     if let value = value as? ToolbarOptions {
       super.writeByte(129)
       super.writeValue(value.rawValue)
-    } else if let value = value as? EditorConfig {
+    } else if let value = value as? Theme {
       super.writeByte(130)
+      super.writeValue(value.rawValue)
+    } else if let value = value as? EditorConfig {
+      super.writeByte(131)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -179,7 +202,7 @@ class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
 
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol AztecEditorApi {
-  func launch(initialHtml: String?, config: EditorConfig?, completion: @escaping (Result<String, Error>) -> Void)
+  func launch(initialHtml: String?, config: EditorConfig, completion: @escaping (Result<String?, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -193,7 +216,7 @@ class AztecEditorApiSetup {
       launchChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let initialHtmlArg: String? = nilOrValue(args[0])
-        let configArg: EditorConfig? = nilOrValue(args[1])
+        let configArg = args[1] as! EditorConfig
         api.launch(initialHtml: initialHtmlArg, config: configArg) { result in
           switch result {
           case .success(let res):
