@@ -63,6 +63,7 @@ class EditorConfig {
     this.primaryColor,
     this.backgroundColor,
     this.textColor,
+    this.placeholder,
     this.fileExtensions,
     this.toolbarOptions,
     required this.title,
@@ -74,6 +75,8 @@ class EditorConfig {
   String? backgroundColor;
 
   String? textColor;
+
+  String? placeholder;
 
   List<String>? fileExtensions;
 
@@ -88,6 +91,7 @@ class EditorConfig {
       primaryColor,
       backgroundColor,
       textColor,
+      placeholder,
       fileExtensions,
       toolbarOptions,
       title,
@@ -101,10 +105,11 @@ class EditorConfig {
       primaryColor: result[0] as String?,
       backgroundColor: result[1] as String?,
       textColor: result[2] as String?,
-      fileExtensions: (result[3] as List<Object?>?)?.cast<String>(),
-      toolbarOptions: (result[4] as List<Object?>?)?.cast<ToolbarOptions>(),
-      title: result[5]! as String,
-      theme: result[6]! as Theme,
+      placeholder: result[3] as String?,
+      fileExtensions: (result[4] as List<Object?>?)?.cast<String>(),
+      toolbarOptions: (result[5] as List<Object?>?)?.cast<ToolbarOptions>(),
+      title: result[6]! as String,
+      theme: result[7]! as Theme,
     );
   }
 }

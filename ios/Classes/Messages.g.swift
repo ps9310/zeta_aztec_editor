@@ -106,6 +106,7 @@ struct EditorConfig {
   var primaryColor: String? = nil
   var backgroundColor: String? = nil
   var textColor: String? = nil
+  var placeholder: String? = nil
   var fileExtensions: [String]? = nil
   var toolbarOptions: [ToolbarOptions]? = nil
   var title: String
@@ -117,15 +118,17 @@ struct EditorConfig {
     let primaryColor: String? = nilOrValue(pigeonVar_list[0])
     let backgroundColor: String? = nilOrValue(pigeonVar_list[1])
     let textColor: String? = nilOrValue(pigeonVar_list[2])
-    let fileExtensions: [String]? = nilOrValue(pigeonVar_list[3])
-    let toolbarOptions: [ToolbarOptions]? = nilOrValue(pigeonVar_list[4])
-    let title = pigeonVar_list[5] as! String
-    let theme = pigeonVar_list[6] as! Theme
+    let placeholder: String? = nilOrValue(pigeonVar_list[3])
+    let fileExtensions: [String]? = nilOrValue(pigeonVar_list[4])
+    let toolbarOptions: [ToolbarOptions]? = nilOrValue(pigeonVar_list[5])
+    let title = pigeonVar_list[6] as! String
+    let theme = pigeonVar_list[7] as! Theme
 
     return EditorConfig(
       primaryColor: primaryColor,
       backgroundColor: backgroundColor,
       textColor: textColor,
+      placeholder: placeholder,
       fileExtensions: fileExtensions,
       toolbarOptions: toolbarOptions,
       title: title,
@@ -137,6 +140,7 @@ struct EditorConfig {
       primaryColor,
       backgroundColor,
       textColor,
+      placeholder,
       fileExtensions,
       toolbarOptions,
       title,

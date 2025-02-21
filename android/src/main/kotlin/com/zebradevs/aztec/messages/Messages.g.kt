@@ -99,6 +99,7 @@ data class EditorConfig (
   val primaryColor: String? = null,
   val backgroundColor: String? = null,
   val textColor: String? = null,
+  val placeholder: String? = null,
   val fileExtensions: List<String>? = null,
   val toolbarOptions: List<ToolbarOptions>? = null,
   val title: String,
@@ -110,11 +111,12 @@ data class EditorConfig (
       val primaryColor = pigeonVar_list[0] as String?
       val backgroundColor = pigeonVar_list[1] as String?
       val textColor = pigeonVar_list[2] as String?
-      val fileExtensions = pigeonVar_list[3] as List<String>?
-      val toolbarOptions = pigeonVar_list[4] as List<ToolbarOptions>?
-      val title = pigeonVar_list[5] as String
-      val theme = pigeonVar_list[6] as Theme
-      return EditorConfig(primaryColor, backgroundColor, textColor, fileExtensions, toolbarOptions, title, theme)
+      val placeholder = pigeonVar_list[3] as String?
+      val fileExtensions = pigeonVar_list[4] as List<String>?
+      val toolbarOptions = pigeonVar_list[5] as List<ToolbarOptions>?
+      val title = pigeonVar_list[6] as String
+      val theme = pigeonVar_list[7] as Theme
+      return EditorConfig(primaryColor, backgroundColor, textColor, placeholder, fileExtensions, toolbarOptions, title, theme)
     }
   }
   fun toList(): List<Any?> {
@@ -122,6 +124,7 @@ data class EditorConfig (
       primaryColor,
       backgroundColor,
       textColor,
+      placeholder,
       fileExtensions,
       toolbarOptions,
       title,

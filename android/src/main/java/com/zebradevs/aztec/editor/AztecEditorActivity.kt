@@ -70,53 +70,56 @@ import org.wordpress.aztec.plugins.wpcomments.HiddenGutenbergPlugin
 import org.wordpress.aztec.plugins.wpcomments.WordPressCommentsPlugin
 import org.wordpress.aztec.toolbar.AztecToolbar
 import org.wordpress.aztec.toolbar.IAztecToolbarClickListener
+import org.wordpress.aztec.toolbar.ToolbarItems
 import org.xml.sax.Attributes
 import java.io.File
 import java.util.Locale
 import java.util.Random
 
 
-class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
-    AztecText.OnImageTappedListener, AztecText.OnVideoTappedListener,
-    AztecText.OnAudioTappedListener, AztecText.OnMediaDeletedListener,
-    AztecText.OnVideoInfoRequestedListener, IAztecToolbarClickListener, IHistoryListener,
-    OnRequestPermissionsResultCallback, PopupMenu.OnMenuItemClickListener, View.OnTouchListener {
+class AztecEditorActivity : AppCompatActivity(),
+    AztecText.OnImeBackListener,
+    AztecText.OnImageTappedListener,
+    AztecText.OnVideoTappedListener,
+    AztecText.OnAudioTappedListener,
+    AztecText.OnMediaDeletedListener,
+    AztecText.OnVideoInfoRequestedListener,
+    IAztecToolbarClickListener,
+    IHistoryListener,
+    OnRequestPermissionsResultCallback,
+    PopupMenu.OnMenuItemClickListener,
+    View.OnTouchListener {
 
+    // region Companion & Constants
     companion object {
         const val REQUEST_CODE: Int = 9001
-        private const val MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE: Int = 1001
-        private const val MEDIA_CAMERA_VIDEO_PERMISSION_REQUEST_CODE: Int = 1002
-        private const val MEDIA_PHOTOS_PERMISSION_REQUEST_CODE: Int = 1003
-        private const val MEDIA_VIDEOS_PERMISSION_REQUEST_CODE: Int = 1004
-        private const val REQUEST_MEDIA_CAMERA_PHOTO: Int = 2001
-        private const val REQUEST_MEDIA_CAMERA_VIDEO: Int = 2002
-        private const val REQUEST_MEDIA_PHOTO: Int = 2003
-        private const val REQUEST_MEDIA_VIDEO: Int = 2004
+        private const val MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE = 1001
+        private const val MEDIA_CAMERA_VIDEO_PERMISSION_REQUEST_CODE = 1002
+        private const val MEDIA_PHOTOS_PERMISSION_REQUEST_CODE = 1003
+        private const val MEDIA_VIDEOS_PERMISSION_REQUEST_CODE = 1004
+        private const val REQUEST_MEDIA_CAMERA_PHOTO = 2001
+        private const val REQUEST_MEDIA_CAMERA_VIDEO = 2002
+        private const val REQUEST_MEDIA_PHOTO = 2003
+        private const val REQUEST_MEDIA_VIDEO = 2004
 
         fun createIntent(
             activity: Activity,
             title: String,
+            placeholder: String?,
             initialHtml: String?,
             theme: String?
         ): Intent {
             return Intent(activity, AztecEditorActivity::class.java).apply {
                 putExtra("title", title)
+                putExtra("placeholder", placeholder)
                 putExtra("initialHtml", initialHtml)
                 putExtra("theme", theme)
             }
         }
-
-        private val isRunningTest: Boolean by lazy {
-            try {
-                Class.forName("androidx.test.espresso.Espresso")
-                true
-            } catch (e: ClassNotFoundException) {
-                false
-            }
-        }
     }
+    // endregion
 
-
+    // region Properties
     private lateinit var aztec: Aztec
     private lateinit var mediaFile: String
     private lateinit var mediaPath: String
@@ -129,171 +132,60 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
 
     private var mIsKeyboardOpen = false
     private var mHideActionBarOnSoftKeyboardUp = false
+    // endregion
 
-    override fun onActivityResult(
-        requestCode: Int,
-        resultCode: Int,
-        data: Intent?,
-        caller: ComponentCaller
-    ) {
-        super.onActivityResult(requestCode, resultCode, data, caller)
-
-        if (resultCode == Activity.RESULT_OK) {
-            when (requestCode) {
-                REQUEST_MEDIA_CAMERA_PHOTO -> {
-                    // By default, BitmapFactory.decodeFile sets the bitmap's density to the device default so, we need
-                    //  to correctly set the input density to 160 ourselves.
-                    val options = BitmapFactory.Options()
-                    options.inDensity = DisplayMetrics.DENSITY_DEFAULT
-                    val bitmap = BitmapFactory.decodeFile(mediaPath, options)
-                    Log.d("MediaPath", mediaPath)
-                    insertImageAndSimulateUpload(bitmap, mediaPath)
-                }
-
-                REQUEST_MEDIA_PHOTO -> {
-                    mediaPath = data?.data.toString()
-                    val stream = contentResolver.openInputStream(Uri.parse(mediaPath))
-                    // By default, BitmapFactory.decodeFile sets the bitmap's density to the device default so, we need
-                    //  to correctly set the input density to 160 ourselves.
-                    val options = BitmapFactory.Options()
-                    options.inDensity = DisplayMetrics.DENSITY_DEFAULT
-                    val bitmap = BitmapFactory.decodeStream(stream, null, options)
-
-                    insertImageAndSimulateUpload(bitmap, mediaPath)
-                }
-
-                REQUEST_MEDIA_CAMERA_VIDEO -> {
-                    mediaPath = data?.data.toString()
-                }
-
-                REQUEST_MEDIA_VIDEO -> {
-                    mediaPath = data?.data.toString()
-
-                    aztec.visualEditor.videoThumbnailGetter?.loadVideoThumbnail(
-                        mediaPath, object : Html.VideoThumbnailGetter.Callbacks {
-                            override fun onThumbnailFailed() {
-                            }
-
-                            override fun onThumbnailLoaded(drawable: Drawable?) {
-                                val conf = Bitmap.Config.ARGB_8888 // see other conf types
-                                val bitmap = Bitmap.createBitmap(
-                                    drawable!!.intrinsicWidth, drawable.intrinsicHeight, conf
-                                )
-                                val canvas = Canvas(bitmap)
-                                drawable.setBounds(0, 0, canvas.width, canvas.height)
-                                drawable.draw(canvas)
-
-                                insertVideoAndSimulateUpload(bitmap, mediaPath)
-                            }
-
-                            override fun onThumbnailLoading(drawable: Drawable?) {
-                            }
-                        }, this.resources.displayMetrics.widthPixels
-                    )
-                }
-            }
-        }
-
-        super.onActivityResult(requestCode, resultCode, data)
-    }
-
-    private fun insertImageAndSimulateUpload(bitmap: Bitmap?, mediaPath: String) {
-        val bitmapResized =
-            ImageUtils.getScaledBitmapAtLongestSide(bitmap, aztec.visualEditor.maxImagesWidth)
-        val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = false)
-        aztec.visualEditor.insertImage(BitmapDrawable(resources, bitmapResized), attrs)
-        insertMediaAndSimulateUpload(id, attrs)
-        aztec.toolbar.toggleMediaToolbar()
-    }
-
-    fun insertVideoAndSimulateUpload(bitmap: Bitmap?, mediaPath: String) {
-        val bitmapResized =
-            ImageUtils.getScaledBitmapAtLongestSide(bitmap, aztec.visualEditor.maxImagesWidth)
-        val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = true)
-        aztec.visualEditor.insertVideo(BitmapDrawable(resources, bitmapResized), attrs)
-        insertMediaAndSimulateUpload(id, attrs)
-        aztec.toolbar.toggleMediaToolbar()
-    }
-
-    private fun generateAttributesForMedia(
-        mediaPath: String, isVideo: Boolean
-    ): Pair<String, AztecAttributes> {
-        val id = Random().nextInt(Integer.MAX_VALUE).toString()
-        val attrs = AztecAttributes()
-        attrs.setValue(
-            "src", mediaPath
-        ) // Temporary source value.  Replace with URL after uploaded.
-        attrs.setValue("id", id)
-        attrs.setValue("uploading", "true")
-
-        if (isVideo) {
-            attrs.setValue("video", "true")
-        }
-
-        return Pair(id, attrs)
-    }
-
-    private fun insertMediaAndSimulateUpload(id: String, attrs: AztecAttributes) {
-        val predicate = object : AztecText.AttributePredicate {
-            override fun matches(attrs: Attributes): Boolean {
-                return attrs.getValue("id") == id
-            }
-        }
-
-        aztec.visualEditor.setOverlay(predicate, 0, ColorDrawable(0x80000000.toInt()), Gravity.FILL)
-        aztec.visualEditor.updateElementAttributes(predicate, attrs)
-
-        val progressDrawable =
-            AppCompatResources.getDrawable(this, android.R.drawable.progress_horizontal)!!
-        // set the height of the progress bar to 2 (it's in dp since the drawable will be adjusted by the span)
-        progressDrawable.setBounds(0, 0, 0, 4)
-
-        aztec.visualEditor.setOverlay(
-            predicate, 1, progressDrawable, Gravity.FILL_HORIZONTAL or Gravity.TOP
-        )
-        aztec.visualEditor.updateElementAttributes(predicate, attrs)
-
-        var progress = 0
-
-        // simulate an upload delay
-        val runnable = Runnable {
-            aztec.visualEditor.setOverlayLevel(predicate, 1, progress)
-            aztec.visualEditor.updateElementAttributes(predicate, attrs)
-            aztec.visualEditor.resetAttributedMediaSpan(predicate)
-            progress += 2000
-
-            if (progress >= 10000) {
-                attrs.removeAttribute(attrs.getIndex("uploading"))
-                aztec.visualEditor.clearOverlays(predicate)
-
-                if (attrs.hasAttribute("video")) {
-                    attrs.removeAttribute(attrs.getIndex("video"))
-                    aztec.visualEditor.setOverlay(
-                        predicate,
-                        0,
-                        AppCompatResources.getDrawable(this, android.R.drawable.ic_media_play),
-                        Gravity.CENTER
-                    )
-                }
-
-                aztec.visualEditor.updateElementAttributes(predicate, attrs)
-            }
-        }
-
-        Handler(Looper.getMainLooper()).post(runnable)
-        Handler(Looper.getMainLooper()).postDelayed(runnable, 2000)
-        Handler(Looper.getMainLooper()).postDelayed(runnable, 4000)
-        Handler(Looper.getMainLooper()).postDelayed(runnable, 6000)
-        Handler(Looper.getMainLooper()).postDelayed(runnable, 8000)
-
-        aztec.visualEditor.refreshText()
-    }
-
+    // region Lifecycle & Setup
     override fun onCreate(savedInstanceState: Bundle?) {
-        val themeParam = intent.getStringExtra("theme") ?: "system"
-        val initialHtml = intent.getStringExtra("initialHtml")
-        val title = intent.getStringExtra("title")
+        setupThemeAndToolbar()
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_aztec_editor)
 
+        setupBackPressHandler()
+        setupEditorConfiguration()
+        setupAztecEditor(savedInstanceState)
+        setupInvalidateOptionsHandler()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        mIsKeyboardOpen = false
+    }
+
+    override fun onResume() {
+        super.onResume()
+        showActionBarIfNeeded()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        aztec.visualEditor.disableCrashLogging()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        mHideActionBarOnSoftKeyboardUp =
+            newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE &&
+                    !resources.getBoolean(R.bool.is_large_tablet_landscape)
+        if (mHideActionBarOnSoftKeyboardUp) hideActionBarIfNeeded() else showActionBarIfNeeded()
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        aztec.initSourceEditorHistory()
+        if (savedInstanceState.getBoolean("isMediaUploadDialogVisible")) {
+            showMediaUploadDialog()
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (mediaUploadDialog?.isShowing == true) {
+            outState.putBoolean("isMediaUploadDialogVisible", true)
+        }
+    }
+
+    private fun setupThemeAndToolbar() {
+        val themeParam = intent.getStringExtra("theme") ?: "system"
         when (themeParam.lowercase(Locale.getDefault())) {
             "dark" -> {
                 setTheme(R.style.EditorDarkTheme)
@@ -306,93 +198,95 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
             }
 
             else -> {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
                 setTheme(R.style.EditorDayNightTheme)
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             }
         }
+    }
 
-
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_aztec_editor)
-
-        val isDarkMode = isDarkMode()
-        val topToolbar: Toolbar = findViewById(R.id.top_toolbar)
-        val defaultAppBarColor = if (isDarkMode) Color.BLACK else Color.WHITE
-        val defaultAppBarTextColor = if (isDarkMode) Color.WHITE else Color.BLACK
-        val appBarColor = intent.getIntExtra("appBarColor", defaultAppBarColor)
-        val appBarTextColor = intent.getIntExtra("appBarTextColor", defaultAppBarTextColor)
-
-        topToolbar.setBackgroundColor(appBarColor)
-        topToolbar.setTitleTextColor(appBarTextColor)
-        topToolbar.setSubtitleTextColor(appBarTextColor)
-
-        setSupportActionBar(topToolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setDisplayShowHomeEnabled(true)
-        supportActionBar?.setDisplayShowTitleEnabled(true)
-        supportActionBar?.setHomeButtonEnabled(true)
-
-        title?.let { supportActionBar?.title = it } ?: run { supportActionBar?.title = "" }
-
+    private fun setupBackPressHandler() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 mIsKeyboardOpen = false
                 showActionBarIfNeeded()
-
-                // Disable the callback temporarily to allow the system to handle the back pressed event. This usage
-                // breaks predictive back gesture behavior and should be reviewed before enabling the predictive back
-                // gesture feature.
                 isEnabled = false
                 onBackPressedDispatcher.onBackPressed()
                 isEnabled = true
             }
         })
+    }
 
+    private fun setupEditorConfiguration() {
         // Setup hiding the action bar when the soft keyboard is displayed for narrow viewports
-        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE && !resources.getBoolean(
-                R.bool.is_large_tablet_landscape
-            )
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE &&
+            !resources.getBoolean(R.bool.is_large_tablet_landscape)
         ) {
             mHideActionBarOnSoftKeyboardUp = true
         }
+    }
+
+    private fun setupAztecEditor(savedInstanceState: Bundle?) {
+        val isDarkMode = isDarkMode()
+        val defaultAppBarColor = if (isDarkMode) Color.BLACK else Color.WHITE
+        val defaultAppBarTextColor = if (isDarkMode) Color.WHITE else Color.BLACK
+        val appBarColor = intent.getIntExtra("appBarColor", defaultAppBarColor)
+        val appBarTextColor = intent.getIntExtra("appBarTextColor", defaultAppBarTextColor)
 
         val visualEditor = findViewById<AztecText>(R.id.aztec)
-        val toolbar = findViewById<AztecToolbar>(R.id.formatting_toolbar)
+        val aztecToolbar = findViewById<AztecToolbar>(R.id.formatting_toolbar)
+        val topToolbar = findViewById<Toolbar>(R.id.top_toolbar)
+
+        topToolbar.setBackgroundColor(appBarColor)
+        topToolbar.setTitleTextColor(appBarTextColor)
+        topToolbar.setSubtitleTextColor(appBarTextColor)
+        setSupportActionBar(topToolbar)
+        setTitle(intent.getStringExtra("title") ?: "")
+
+        supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setDisplayShowHomeEnabled(true)
+            setDisplayShowTitleEnabled(true)
+            setHomeButtonEnabled(true)
+            title = intent.getStringExtra("title") ?: ""
+        }
 
         visualEditor.enableSamsungPredictiveBehaviorOverride()
         visualEditor.setBackgroundColor(defaultAppBarColor)
         visualEditor.setTextAppearance(android.R.style.TextAppearance)
-        toolbar.setBackgroundColor(appBarColor)
+        visualEditor.hint = intent.getStringExtra("placeholder") ?: getString(R.string.edit_hint)
 
-        val galleryButton = MediaToolbarGalleryButton(toolbar)
-        galleryButton.setMediaToolbarButtonClickListener(object :
-            IMediaToolbarButton.IMediaToolbarClickListener {
-            override fun onClick(view: View) {
-                mediaMenu = PopupMenu(this@AztecEditorActivity, view)
-                mediaMenu?.setOnMenuItemClickListener(this@AztecEditorActivity)
-                mediaMenu?.inflate(R.menu.menu_gallery)
-                mediaMenu?.show()
-                if (view is ToggleButton) {
-                    view.isChecked = false
+        aztecToolbar.setBackgroundColor(defaultAppBarColor)
+
+
+        val toolbarGalleryButton = MediaToolbarGalleryButton(aztecToolbar).apply {
+            setMediaToolbarButtonClickListener(object :
+                IMediaToolbarButton.IMediaToolbarClickListener {
+                override fun onClick(view: View) {
+                    mediaMenu = PopupMenu(this@AztecEditorActivity, view).apply {
+                        setOnMenuItemClickListener(this@AztecEditorActivity)
+                        inflate(R.menu.menu_gallery)
+                        show()
+                    }
+                    if (view is ToggleButton) view.isChecked = false
                 }
-            }
-        })
+            })
+        }
 
-        val cameraButton = MediaToolbarCameraButton(toolbar)
-        cameraButton.setMediaToolbarButtonClickListener(object :
-            IMediaToolbarButton.IMediaToolbarClickListener {
-            override fun onClick(view: View) {
-                mediaMenu = PopupMenu(this@AztecEditorActivity, view)
-                mediaMenu?.setOnMenuItemClickListener(this@AztecEditorActivity)
-                mediaMenu?.inflate(R.menu.menu_camera)
-                mediaMenu?.show()
-                if (view is ToggleButton) {
-                    view.isChecked = false
+        val toolbarCameraButton = MediaToolbarCameraButton(aztecToolbar).apply {
+            setMediaToolbarButtonClickListener(object :
+                IMediaToolbarButton.IMediaToolbarClickListener {
+                override fun onClick(view: View) {
+                    mediaMenu = PopupMenu(this@AztecEditorActivity, view).apply {
+                        setOnMenuItemClickListener(this@AztecEditorActivity)
+                        inflate(R.menu.menu_camera)
+                        show()
+                    }
+                    if (view is ToggleButton) view.isChecked = false
                 }
-            }
-        })
+            })
+        }
 
-        aztec = Aztec.with(visualEditor, toolbar, this)
+        aztec = Aztec.with(visualEditor, aztecToolbar, this)
             .setImageGetter(GlideImageLoader(this))
             .setVideoThumbnailGetter(GlideVideoThumbnailLoader(this))
             .setOnImeBackListener(this)
@@ -408,138 +302,366 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
             .addPlugin(VideoShortcodePlugin())
             .addPlugin(AudioShortcodePlugin())
             .addPlugin(HiddenGutenbergPlugin(visualEditor))
-            .addPlugin(galleryButton)
-            .addPlugin(cameraButton)
+            .addPlugin(toolbarGalleryButton)
+            .addPlugin(toolbarCameraButton)
 
         aztec.visualEditor.enableCrashLogging(object :
             AztecExceptionHandler.ExceptionHandlerHelper {
-            override fun shouldLog(ex: Throwable): Boolean {
-                return true
-            }
+            override fun shouldLog(ex: Throwable): Boolean = true
         })
 
         aztec.visualEditor.setCalypsoMode(false)
         aztec.sourceEditor?.setCalypsoMode(false)
-
         aztec.visualEditor.setBackgroundSpanColor(
-            ContextCompat.getColor(
-                this, org.wordpress.aztec.R.color.blue_dark
-            )
+            ContextCompat.getColor(this, org.wordpress.aztec.R.color.blue_dark)
         )
-
         aztec.addPlugin(CssUnderlinePlugin())
         aztec.addPlugin(CssBackgroundColorPlugin())
         aztec.addPlugin(BackgroundColorButton(visualEditor))
-
-        aztec.visualEditor.fromHtml(initialHtml ?: "")
+        aztec.visualEditor.fromHtml(intent.getStringExtra("initialHtml") ?: "")
 
         if (savedInstanceState == null) {
             aztec.initSourceEditorHistory()
         }
+    }
 
+
+    private fun setupToolbarOptions(toolbar: AztecToolbar) {
+        toolbar.setToolbarItems(
+            ToolbarItems.defaultAdvancedLayout
+        )
+    }
+
+    private fun setupInvalidateOptionsHandler() {
         invalidateOptionsHandler = Handler(Looper.getMainLooper())
         invalidateOptionsRunnable = Runnable { invalidateOptionsMenu() }
     }
+    // endregion
 
+    // region Media Handling
+//
+//    override fun onActivityResult(
+//        requestCode: Int,
+//        resultCode: Int,
+//        data: Intent?,
+//        caller: ComponentCaller
+//    ) {
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (resultCode != Activity.RESULT_OK) return
+
+        when (requestCode) {
+            REQUEST_MEDIA_CAMERA_PHOTO -> handleCameraPhotoResult()
+            REQUEST_MEDIA_PHOTO -> handleGalleryPhotoResult(data)
+            REQUEST_MEDIA_CAMERA_VIDEO -> handleCameraVideoResult(data)
+            REQUEST_MEDIA_VIDEO -> handleGalleryVideoResult(data)
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    private fun handleCameraPhotoResult() {
+        val options = BitmapFactory.Options().apply { inDensity = DisplayMetrics.DENSITY_DEFAULT }
+        val bitmap = BitmapFactory.decodeFile(mediaPath, options)
+        Log.d("MediaPath", mediaPath)
+        insertImageAndSimulateUpload(bitmap, mediaPath)
+    }
+
+    private fun handleGalleryPhotoResult(data: Intent?) {
+        mediaPath = data?.data.toString()
+        val stream = contentResolver.openInputStream(Uri.parse(mediaPath))
+        val options = BitmapFactory.Options().apply { inDensity = DisplayMetrics.DENSITY_DEFAULT }
+        val bitmap = BitmapFactory.decodeStream(stream, null, options)
+        insertImageAndSimulateUpload(bitmap, mediaPath)
+    }
+
+    private fun handleCameraVideoResult(data: Intent?) {
+        mediaPath = data?.data.toString()
+        // Additional handling for camera video can be added here if needed.
+    }
+
+    private fun handleGalleryVideoResult(data: Intent?) {
+        mediaPath = data?.data.toString()
+        aztec.visualEditor.videoThumbnailGetter?.loadVideoThumbnail(
+            mediaPath,
+            object : Html.VideoThumbnailGetter.Callbacks {
+                override fun onThumbnailFailed() {}
+                override fun onThumbnailLoaded(drawable: Drawable?) {
+                    drawable?.let {
+                        val bitmap = Bitmap.createBitmap(
+                            it.intrinsicWidth, it.intrinsicHeight, Bitmap.Config.ARGB_8888
+                        )
+                        Canvas(bitmap).apply {
+                            it.setBounds(0, 0, width, height)
+                            it.draw(this)
+                        }
+                        insertVideoAndSimulateUpload(bitmap, mediaPath)
+                    }
+                }
+
+                override fun onThumbnailLoading(drawable: Drawable?) {}
+            },
+            resources.displayMetrics.widthPixels
+        )
+    }
+
+    private fun insertImageAndSimulateUpload(bitmap: Bitmap?, mediaPath: String) {
+        val bitmapResized =
+            ImageUtils.getScaledBitmapAtLongestSide(bitmap, aztec.visualEditor.maxImagesWidth)
+        val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = false)
+        aztec.visualEditor.insertImage(BitmapDrawable(resources, bitmapResized), attrs)
+        simulateMediaUpload(id, attrs)  // simulates upload progress and updates overlays
+        aztec.toolbar.toggleMediaToolbar()
+    }
+
+    fun insertVideoAndSimulateUpload(bitmap: Bitmap?, mediaPath: String) {
+        val bitmapResized =
+            ImageUtils.getScaledBitmapAtLongestSide(bitmap, aztec.visualEditor.maxImagesWidth)
+        val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = true)
+        aztec.visualEditor.insertVideo(BitmapDrawable(resources, bitmapResized), attrs)
+        simulateMediaUpload(id, attrs)
+        aztec.toolbar.toggleMediaToolbar()
+    }
+
+    private fun generateAttributesForMedia(
+        mediaPath: String,
+        isVideo: Boolean
+    ): Pair<String, AztecAttributes> {
+        val id = Random().nextInt(Int.MAX_VALUE).toString()
+        val attrs = AztecAttributes().apply {
+            setValue("src", mediaPath) // Temporary source value – replace with URL after upload.
+            setValue("id", id)
+            setValue("uploading", "true")
+            if (isVideo) setValue("video", "true")
+        }
+        return Pair(id, attrs)
+    }
+
+    private fun simulateMediaUpload(id: String, attrs: AztecAttributes) {
+        val predicate = object : AztecText.AttributePredicate {
+            override fun matches(attrs: Attributes): Boolean = attrs.getValue("id") == id
+        }
+        // Set initial overlay and progress drawable
+        aztec.visualEditor.setOverlay(predicate, 0, ColorDrawable(0x80000000.toInt()), Gravity.FILL)
+        aztec.visualEditor.updateElementAttributes(predicate, attrs)
+        val progressDrawable =
+            AppCompatResources.getDrawable(this, android.R.drawable.progress_horizontal)!!
+        progressDrawable.setBounds(0, 0, 0, 4)
+        aztec.visualEditor.setOverlay(
+            predicate,
+            1,
+            progressDrawable,
+            Gravity.FILL_HORIZONTAL or Gravity.TOP
+        )
+        aztec.visualEditor.updateElementAttributes(predicate, attrs)
+
+        var progress = 0
+        val runnable = object : Runnable {
+            override fun run() {
+                aztec.visualEditor.setOverlayLevel(predicate, 1, progress)
+                aztec.visualEditor.updateElementAttributes(predicate, attrs)
+                aztec.visualEditor.resetAttributedMediaSpan(predicate)
+                progress += 2000
+                if (progress >= 10000) {
+                    attrs.removeAttribute(attrs.getIndex("uploading"))
+                    aztec.visualEditor.clearOverlays(predicate)
+                    if (attrs.hasAttribute("video")) {
+                        attrs.removeAttribute(attrs.getIndex("video"))
+                        aztec.visualEditor.setOverlay(
+                            predicate,
+                            0,
+                            AppCompatResources.getDrawable(
+                                this@AztecEditorActivity,
+                                android.R.drawable.ic_media_play
+                            ),
+                            Gravity.CENTER
+                        )
+                    }
+                    aztec.visualEditor.updateElementAttributes(predicate, attrs)
+                } else {
+                    Handler(Looper.getMainLooper()).postDelayed(this, 2000)
+                }
+            }
+        }
+        Handler(Looper.getMainLooper()).post(runnable)
+        aztec.visualEditor.refreshText()
+    }
+    // endregion
+
+    // region Permission Handling
+    private fun onCameraPhotoMediaOptionSelected() {
+        if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(
+                this, MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE
+            )
+        ) {
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                mediaFile = "wp-" + System.currentTimeMillis()
+                mediaPath = File.createTempFile(
+                    mediaFile, ".jpg", getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                ).absolutePath
+            } else {
+                mediaFile = "wp-" + System.currentTimeMillis() + ".jpg"
+                mediaPath =
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+                        .toString() + File.separator + "Camera" + File.separator + mediaFile
+            }
+            intent.putExtra(
+                MediaStore.EXTRA_OUTPUT,
+                FileProvider.getUriForFile(this, "$packageName.provider", File(mediaPath))
+            )
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivityForResult(intent, REQUEST_MEDIA_CAMERA_PHOTO)
+            }
+        }
+    }
+
+    private fun onCameraVideoMediaOptionSelected() {
+        if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(
+                this, MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE
+            )
+        ) {
+            val intent = Intent(MediaStore.INTENT_ACTION_VIDEO_CAMERA)
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivityForResult(intent, REQUEST_MEDIA_CAMERA_VIDEO)
+            }
+        }
+    }
+
+    private fun onPhotosMediaOptionSelected() {
+        if (PermissionUtils.checkAndRequestStoragePermission(
+                this, MEDIA_PHOTOS_PERMISSION_REQUEST_CODE
+            )
+        ) {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "image/*"
+            }
+            try {
+                startActivityForResult(intent, REQUEST_MEDIA_PHOTO)
+            } catch (exception: ActivityNotFoundException) {
+                AppLog.e(AppLog.T.EDITOR, exception.message)
+                ToastUtils.showToast(
+                    this,
+                    getString(org.wordpress.aztec.R.string.error_chooser_photo),
+                    ToastUtils.Duration.LONG
+                )
+            }
+        }
+    }
+
+    private fun onVideosMediaOptionSelected() {
+        if (PermissionUtils.checkAndRequestStoragePermission(
+                this, MEDIA_PHOTOS_PERMISSION_REQUEST_CODE
+            )
+        ) {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "video/*"
+            }
+            try {
+                startActivityForResult(intent, REQUEST_MEDIA_VIDEO)
+            } catch (exception: ActivityNotFoundException) {
+                AppLog.e(AppLog.T.EDITOR, exception.message)
+                ToastUtils.showToast(
+                    this,
+                    getString(org.wordpress.aztec.R.string.error_chooser_video),
+                    ToastUtils.Duration.LONG
+                )
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        when (requestCode) {
+            MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE, MEDIA_CAMERA_VIDEO_PERMISSION_REQUEST_CODE -> {
+                val isPermissionDenied = permissions.indices.any { i ->
+                    (permissions[i] == Manifest.permission.CAMERA ||
+                            permissions[i] == Manifest.permission.WRITE_EXTERNAL_STORAGE) &&
+                            (grantResults[i] == PackageManager.PERMISSION_DENIED)
+                }
+                if (isPermissionDenied) {
+                    ToastUtils.showToast(this, getString(R.string.permission_required_media_camera))
+                } else {
+                    when (requestCode) {
+                        MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE -> onCameraPhotoMediaOptionSelected()
+                        MEDIA_CAMERA_VIDEO_PERMISSION_REQUEST_CODE -> onCameraVideoMediaOptionSelected()
+                    }
+                }
+            }
+
+            MEDIA_PHOTOS_PERMISSION_REQUEST_CODE, MEDIA_VIDEOS_PERMISSION_REQUEST_CODE -> {
+                val isPermissionDenied = permissions.indices.any { i ->
+                    permissions[i] == Manifest.permission.WRITE_EXTERNAL_STORAGE &&
+                            (grantResults[i] == PackageManager.PERMISSION_DENIED)
+                }
+                when (requestCode) {
+                    MEDIA_PHOTOS_PERMISSION_REQUEST_CODE -> {
+                        if (isPermissionDenied) {
+                            ToastUtils.showToast(
+                                this, getString(R.string.permission_required_media_photos)
+                            )
+                        } else {
+                            onPhotosMediaOptionSelected()
+                        }
+                    }
+
+                    MEDIA_VIDEOS_PERMISSION_REQUEST_CODE -> {
+                        if (isPermissionDenied) {
+                            ToastUtils.showToast(
+                                this, getString(R.string.permission_required_media_videos)
+                            )
+                        } else {
+                            onVideosMediaOptionSelected()
+                        }
+                    }
+                }
+            }
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+    // endregion
+
+    // region Action Bar & UI Helpers
     private fun isDarkMode(): Boolean {
         return (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     }
 
-    override fun onPause() {
-        super.onPause()
-        mIsKeyboardOpen = false
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        showActionBarIfNeeded()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        aztec.visualEditor.disableCrashLogging()
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-
-        // Toggle action bar auto-hiding for the new orientation
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE && !resources.getBoolean(R.bool.is_large_tablet_landscape)) {
-            mHideActionBarOnSoftKeyboardUp = true
-            hideActionBarIfNeeded()
-        } else {
-            mHideActionBarOnSoftKeyboardUp = false
-            showActionBarIfNeeded()
-        }
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-
-        aztec.initSourceEditorHistory()
-
-        if (savedInstanceState.getBoolean("isMediaUploadDialogVisible")) {
-            showMediaUploadDialog()
-        }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-
-        if (mediaUploadDialog != null && mediaUploadDialog!!.isShowing) {
-            outState.putBoolean("isMediaUploadDialogVisible", true)
-        }
-    }
-
-    /**
-     * Returns true if a hardware keyboard is detected, otherwise false.
-     */
     private fun isHardwareKeyboardPresent(): Boolean {
-        val config = resources.configuration
-        var returnValue = false
-        if (config.keyboard != Configuration.KEYBOARD_NOKEYS) {
-            returnValue = true
-        }
-        return returnValue
+        return resources.configuration.keyboard != Configuration.KEYBOARD_NOKEYS
     }
 
     private fun hideActionBarIfNeeded() {
-        val actionBar = supportActionBar
-        if (actionBar != null && !isHardwareKeyboardPresent() && mHideActionBarOnSoftKeyboardUp && mIsKeyboardOpen && actionBar.isShowing) {
-            actionBar.hide()
+        supportActionBar?.let { actionBar ->
+            if (!isHardwareKeyboardPresent() && mHideActionBarOnSoftKeyboardUp && mIsKeyboardOpen && actionBar.isShowing) {
+                actionBar.hide()
+            }
         }
     }
 
-    /**
-     * Show the action bar if needed.
-     */
     private fun showActionBarIfNeeded() {
-        val actionBar = supportActionBar
-        if (actionBar != null && !actionBar.isShowing) {
-            actionBar.show()
+        supportActionBar?.let { actionBar ->
+            if (!actionBar.isShowing) actionBar.show()
         }
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouch(view: View, event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_UP) {
-            // If the WebView or EditText has received a touch event, the keyboard will be displayed and the action bar
-            // should hide
             mIsKeyboardOpen = true
             hideActionBarIfNeeded()
         }
         return false
     }
 
-    /**
-     * Intercept back button press while soft keyboard is visible.
-     */
     override fun onImeBack() {
         mIsKeyboardOpen = false
         showActionBarIfNeeded()
     }
+    // endregion
 
+    // region Options Menu & Toolbar Callbacks
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
         val menuIconColor = if (isDarkMode()) Color.WHITE else Color.BLACK
@@ -549,39 +671,26 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            android.R.id.home -> {
-                finish() // or onBackPressed()
+            android.R.id.home -> finish()
+            R.id.undo -> {
+                if (aztec.visualEditor.visibility == View.VISIBLE) {
+                    aztec.visualEditor.undo()
+                } else {
+                    aztec.sourceEditor?.undo()
+                }
             }
 
-            R.id.undo -> if (aztec.visualEditor.visibility == View.VISIBLE) {
-                aztec.visualEditor.undo()
-            } else {
-                aztec.sourceEditor?.undo()
+            R.id.redo -> {
+                if (aztec.visualEditor.visibility == View.VISIBLE) {
+                    aztec.visualEditor.redo()
+                } else {
+                    aztec.sourceEditor?.redo()
+                }
             }
 
-            R.id.redo -> if (aztec.visualEditor.visibility == View.VISIBLE) {
-                aztec.visualEditor.redo()
-            } else {
-                aztec.sourceEditor?.redo()
-            }
-
-            R.id.done -> {
-                doneEditing()
-            }
-
-            else -> {
-            }
+            R.id.done -> doneEditing()
         }
-
         return true
-    }
-
-    private fun doneEditing() {
-        val html = aztec.visualEditor.toHtml()
-        val intent = Intent()
-        intent.putExtra("html", html)
-        setResult(RESULT_OK, intent)
-        finish()
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
@@ -607,201 +716,29 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
     }
 
     override fun onUndo() {}
-
     override fun onRedo() {}
 
-    private fun onCameraPhotoMediaOptionSelected() {
-        if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(
-                this, MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE
-            )
-        ) {
-            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                mediaFile = "wp-" + System.currentTimeMillis()
-                mediaPath = File.createTempFile(
-                    mediaFile, ".jpg", getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-                ).absolutePath
-
-            } else {
-                mediaFile = "wp-" + System.currentTimeMillis() + ".jpg"
-                mediaPath =
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
-                        .toString() + File.separator + "Camera" + File.separator + mediaFile
-            }
-            intent.putExtra(
-                MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(
-                    this, "$packageName.provider", File(mediaPath)
-                )
-            )
-
-            if (intent.resolveActivity(packageManager) != null) {
-                startActivityForResult(intent, REQUEST_MEDIA_CAMERA_PHOTO)
-            }
-        }
+    private fun doneEditing() {
+        val html = aztec.visualEditor.toHtml()
+        setResult(RESULT_OK, Intent().apply { putExtra("html", html) })
+        finish()
     }
+    // endregion
 
-    private fun onCameraVideoMediaOptionSelected() {
-        if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(
-                this, MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE
-            )
-        ) {
-            val intent = Intent(MediaStore.INTENT_ACTION_VIDEO_CAMERA)
-
-            if (intent.resolveActivity(packageManager) != null) {
-                startActivityForResult(intent, REQUEST_MEDIA_CAMERA_VIDEO)
-            }
-        }
-    }
-
-    private fun onPhotosMediaOptionSelected() {
-        if (PermissionUtils.checkAndRequestStoragePermission(
-                this, MEDIA_PHOTOS_PERMISSION_REQUEST_CODE
-            )
-        ) {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-            intent.addCategory(Intent.CATEGORY_OPENABLE)
-            intent.type = "image/*"
-
-            try {
-                startActivityForResult(intent, REQUEST_MEDIA_PHOTO)
-            } catch (exception: ActivityNotFoundException) {
-                AppLog.e(AppLog.T.EDITOR, exception.message)
-                ToastUtils.showToast(
-                    this,
-                    getString(org.wordpress.aztec.R.string.error_chooser_photo),
-                    ToastUtils.Duration.LONG
-                )
-            }
-        }
-    }
-
-    private fun onVideosMediaOptionSelected() {
-        if (PermissionUtils.checkAndRequestStoragePermission(
-                this, MEDIA_PHOTOS_PERMISSION_REQUEST_CODE
-            )
-        ) {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-            intent.addCategory(Intent.CATEGORY_OPENABLE)
-            intent.type = "video/*"
-
-            try {
-                startActivityForResult(intent, REQUEST_MEDIA_VIDEO)
-            } catch (exception: ActivityNotFoundException) {
-                AppLog.e(AppLog.T.EDITOR, exception.message)
-                ToastUtils.showToast(
-                    this,
-                    getString(org.wordpress.aztec.R.string.error_chooser_video),
-                    ToastUtils.Duration.LONG
-                )
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
-    ) {
-        when (requestCode) {
-            MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE, MEDIA_CAMERA_VIDEO_PERMISSION_REQUEST_CODE -> {
-                var isPermissionDenied = false
-
-                for (i in grantResults.indices) {
-                    when (permissions[i]) {
-                        Manifest.permission.CAMERA -> {
-                            if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-                                isPermissionDenied = true
-                            }
-                        }
-
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE -> {
-                            if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-                                isPermissionDenied = true
-                            }
-                        }
-                    }
-                }
-
-                if (isPermissionDenied) {
-                    ToastUtils.showToast(this, getString(R.string.permission_required_media_camera))
-                } else {
-                    when (requestCode) {
-                        MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE -> {
-                            onCameraPhotoMediaOptionSelected()
-                        }
-
-                        MEDIA_CAMERA_VIDEO_PERMISSION_REQUEST_CODE -> {
-                            onCameraVideoMediaOptionSelected()
-                        }
-                    }
-                }
-            }
-
-            MEDIA_PHOTOS_PERMISSION_REQUEST_CODE, MEDIA_VIDEOS_PERMISSION_REQUEST_CODE -> {
-                var isPermissionDenied = false
-
-                for (i in grantResults.indices) {
-                    when (permissions[i]) {
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE -> {
-                            if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-                                isPermissionDenied = true
-                            }
-                        }
-                    }
-                }
-
-                when (requestCode) {
-                    MEDIA_PHOTOS_PERMISSION_REQUEST_CODE -> {
-                        if (isPermissionDenied) {
-                            ToastUtils.showToast(
-                                this, getString(R.string.permission_required_media_photos)
-                            )
-                        } else {
-                            onPhotosMediaOptionSelected()
-                        }
-                    }
-
-                    MEDIA_VIDEOS_PERMISSION_REQUEST_CODE -> {
-                        if (isPermissionDenied) {
-                            ToastUtils.showToast(
-                                this, getString(R.string.permission_required_media_videos)
-                            )
-                        } else {
-                            onVideosMediaOptionSelected()
-                        }
-                    }
-                }
-            }
-
-            else -> {
-            }
-        }
-
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-    }
-
-    override fun onToolbarCollapseButtonClicked() {
-    }
-
-    override fun onToolbarExpandButtonClicked() {
-    }
-
+    // region Toolbar & Menu Item Callbacks
+    override fun onToolbarCollapseButtonClicked() {}
+    override fun onToolbarExpandButtonClicked() {}
     override fun onToolbarFormatButtonClicked(format: ITextFormat, isKeyboardShortcut: Boolean) {
         ToastUtils.showToast(this, format.toString())
     }
 
-    override fun onToolbarHeadingButtonClicked() {
-    }
-
+    override fun onToolbarHeadingButtonClicked() {}
     override fun onToolbarHtmlButtonClicked() {
         val uploadingPredicate = object : AztecText.AttributePredicate {
-            override fun matches(attrs: Attributes): Boolean {
-                return attrs.getIndex("uploading") > -1
-            }
+            override fun matches(attrs: Attributes): Boolean = attrs.getIndex("uploading") > -1
         }
-
         val mediaPending =
             aztec.visualEditor.getAllElementAttributes(uploadingPredicate).isNotEmpty()
-
         if (mediaPending) {
             ToastUtils.showToast(this, org.wordpress.aztec.R.string.media_upload_dialog_message)
         } else {
@@ -809,16 +746,11 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
         }
     }
 
-    override fun onToolbarListButtonClicked() {
-    }
-
-    override fun onToolbarMediaButtonClicked(): Boolean {
-        return false
-    }
+    override fun onToolbarListButtonClicked() {}
+    override fun onToolbarMediaButtonClicked(): Boolean = false
 
     override fun onMenuItemClick(item: MenuItem?): Boolean {
-        item?.isChecked = (item?.isChecked == false)
-
+        item?.isChecked = !(item?.isChecked ?: false)
         return when (item?.itemId) {
             R.id.take_photo -> {
                 onCameraPhotoMediaOptionSelected()
@@ -843,38 +775,28 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
             else -> false
         }
     }
+    // endregion
 
-    private fun showMediaUploadDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setMessage(getString(org.wordpress.aztec.R.string.media_upload_dialog_message))
-        builder.setPositiveButton(
-            getString(org.wordpress.aztec.R.string.media_upload_dialog_positive), null
-        )
-        mediaUploadDialog = builder.create()
-        mediaUploadDialog!!.show()
-    }
-
+    // region Media Tap & Info Callbacks
     override fun onImageTapped(attrs: AztecAttributes, naturalWidth: Int, naturalHeight: Int) {
         ToastUtils.showToast(this, "Image tapped!")
     }
 
     override fun onVideoTapped(attrs: AztecAttributes) {
-        val url = if (attrs.hasAttribute(ATTRIBUTE_VIDEOPRESS_HIDDEN_SRC)) {
+        val url = if (attrs.hasAttribute(ATTRIBUTE_VIDEOPRESS_HIDDEN_SRC))
             attrs.getValue(ATTRIBUTE_VIDEOPRESS_HIDDEN_SRC)
-        } else {
+        else
             attrs.getValue("src")
-        }
 
         url?.let {
             try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                intent.setDataAndType(Uri.parse(url), "video/*")
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                startActivity(intent)
+                Intent(Intent.ACTION_VIEW, Uri.parse(it)).apply {
+                    setDataAndType(Uri.parse(it), "video/*")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }.also { intent -> startActivity(intent) }
             } catch (e: ActivityNotFoundException) {
                 try {
-                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(browserIntent)
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
                 } catch (e: ActivityNotFoundException) {
                     ToastUtils.showToast(this, "Video tapped!")
                 }
@@ -885,14 +807,9 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
     override fun onVideoInfoRequested(attrs: AztecAttributes) {
         if (attrs.hasAttribute(ATTRIBUTE_VIDEOPRESS_HIDDEN_ID)) {
             AppLog.d(
-                AppLog.T.EDITOR, "Video Info Requested for shortcode " + attrs.getValue(
-                    ATTRIBUTE_VIDEOPRESS_HIDDEN_ID
-                )
-            )/*
-            Here should go the Network request that retrieves additional info about the video.
-            See: https://developer.wordpress.com/docs/api/1.1/get/videos/%24guid/
-            The response has all info in it. We're skipping it here, and set the poster image directly
-            */
+                AppLog.T.EDITOR, "Video Info Requested for shortcode " +
+                        attrs.getValue(ATTRIBUTE_VIDEOPRESS_HIDDEN_ID)
+            )
             aztec.visualEditor.postDelayed({
                 aztec.visualEditor.updateVideoPressThumb(
                     "https://videos.files.wordpress.com/OcobLTqC/img_5786_hd.original.jpg",
@@ -907,14 +824,13 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
         val url = attrs.getValue("src")
         url?.let {
             try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                intent.setDataAndType(Uri.parse(url), "audio/*")
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                startActivity(intent)
+                Intent(Intent.ACTION_VIEW, Uri.parse(it)).apply {
+                    setDataAndType(Uri.parse(it), "audio/*")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }.also { intent -> startActivity(intent) }
             } catch (e: ActivityNotFoundException) {
                 try {
-                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(browserIntent)
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
                 } catch (e: ActivityNotFoundException) {
                     ToastUtils.showToast(this, "Audio tapped!")
                 }
@@ -926,4 +842,18 @@ class AztecEditorActivity : AppCompatActivity(), AztecText.OnImeBackListener,
         val url = attrs.getValue("src")
         ToastUtils.showToast(this, "Media Deleted! $url")
     }
+    // endregion
+
+    // region Media Upload Dialog
+    private fun showMediaUploadDialog() {
+        AlertDialog.Builder(this)
+            .setMessage(getString(org.wordpress.aztec.R.string.media_upload_dialog_message))
+            .setPositiveButton(
+                getString(org.wordpress.aztec.R.string.media_upload_dialog_positive),
+                null
+            )
+            .create()
+            .also { mediaUploadDialog = it; it.show() }
+    }
+    // endregion
 }

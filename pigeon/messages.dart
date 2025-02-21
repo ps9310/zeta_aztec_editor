@@ -63,6 +63,7 @@ class EditorConfig {
   final String? primaryColor;
   final String? backgroundColor;
   final String? textColor;
+  final String? placeholder;
   final List<String>? fileExtensions;
   final List<ToolbarOptions>? toolbarOptions;
   final String title;
@@ -71,6 +72,7 @@ class EditorConfig {
   EditorConfig({
     required this.title,
     required this.primaryColor,
+    required this.placeholder,
     required this.backgroundColor,
     required this.textColor,
     required this.fileExtensions,

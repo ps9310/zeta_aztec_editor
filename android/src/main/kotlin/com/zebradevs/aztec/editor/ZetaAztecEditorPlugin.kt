@@ -75,6 +75,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
                 val intent = AztecEditorActivity.createIntent(
                     activity,
                     title = config.title,
+                    placeholder = config.placeholder,
                     initialHtml = initialHtml,
                     theme = config.theme.toString()
                 )

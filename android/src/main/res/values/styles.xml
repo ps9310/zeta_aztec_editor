@@ -47,7 +47,7 @@
         <item name="android:popupMenuStyle">@style/PopupMenuStyle</item>
         <item name="android:actionModeStyle">@style/ActionModeStyle</item>
         <!-- Ensure toolbar icons are tinted correctly -->
-        <item name="colorControlNormal">@color/black</item>
+<!--        <item name="colorControlNormal">@color/black</item>-->
         <item name="homeAsUpIndicator">@drawable/abc_ic_ab_back_material</item>
     </style>
 
@@ -65,7 +65,7 @@
         <item name="android:popupMenuStyle">@style/PopupMenuStyle</item>
         <item name="android:actionModeStyle">@style/ActionModeStyle</item>
         <!-- Ensure toolbar icons are tinted correctly -->
-        <item name="colorControlNormal">@color/black</item>
+<!--        <item name="colorControlNormal">@color/black</item>-->
         <item name="homeAsUpIndicator">@drawable/abc_ic_ab_back_material</item>
     </style>
 
@@ -83,7 +83,7 @@
         <item name="android:popupMenuStyle">@style/PopupMenuStyle.Dark</item>
         <item name="android:actionModeStyle">@style/ActionModeStyle.Dark</item>
         <!-- Ensure toolbar icons are tinted correctly -->
-        <item name="colorControlNormal">@color/white</item>
+<!--        <item name="colorControlNormal">@color/white</item>-->
         <item name="homeAsUpIndicator">@drawable/abc_ic_ab_back_material</item>
     </style>
 

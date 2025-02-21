@@ -38,10 +38,11 @@ class _MyAppState extends State<MyApp> {
     // We also handle the message potentially returning null.
     try {
       html = await editor.ZetaAztecEditor().launch(
-            initialHtml: _html,
+            initialHtml: '',
             config: editor.EditorConfig(
+              placeholder: 'Type something...',
               theme: theme,
-              title: 'Add HTML',
+              title: 'Add Instructions',
             ),
           ) ??
           '<p>Unknown</p>';
