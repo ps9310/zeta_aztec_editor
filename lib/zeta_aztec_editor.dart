@@ -14,6 +14,10 @@ class ZetaAztecEditor {
   }
 
   Future<String?> launch({String? initialHtml, required EditorConfig config}) async {
-    return _api.launch(initialHtml, config: config);
+    try {
+      return _api.launch(initialHtml, config: config);
+    } catch (e) {
+      return initialHtml;
+    }
   }
 }

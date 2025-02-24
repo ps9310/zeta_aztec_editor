@@ -34,7 +34,7 @@
                 android:imeOptions="flagNoExtractUi"
                 android:inputType="textCapSentences|textMultiLine"
                 android:paddingLeft="16dp"
-                android:paddingTop="16dp"
+                android:paddingTop="8dp"
                 android:paddingEnd="16dp"
                 android:paddingRight="16dp"
                 android:scrollbars="vertical"
@@ -66,5 +66,10 @@
         android:id="@+id/formatting_toolbar"
         android:layout_width="match_parent"
         android:layout_height="@dimen/aztec_format_bar_height"
-        android:layout_alignParentBottom="true" />
+        android:layout_alignParentBottom="true"
+        aztec:advanced="false"
+        aztec:toolbarBorderColor="@color/aztec_toolbar_border"
+        aztec:toolbarIconDisabledColor="@color/aztec_icon_disabled_color"
+        aztec:toolbarIconHighlightColor="@color/aztec_icon_selected_color"
+        aztec:toolbarIconNormalColor="@color/aztec_icon_color" />
 </RelativeLayout>

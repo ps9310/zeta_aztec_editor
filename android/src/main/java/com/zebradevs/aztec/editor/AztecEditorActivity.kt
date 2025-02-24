@@ -3,7 +3,6 @@ package com.zebradevs.aztec.editor
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.ComponentCaller
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -41,6 +40,7 @@ import androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.forEach
+import com.zebradevs.aztec.ToolbarOptions
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.ImageUtils
 import org.wordpress.android.util.PermissionUtils
@@ -52,12 +52,8 @@ import org.wordpress.aztec.AztecText
 import org.wordpress.aztec.Html
 import org.wordpress.aztec.IHistoryListener
 import org.wordpress.aztec.ITextFormat
-import org.wordpress.aztec.demo.MediaToolbarCameraButton
-import org.wordpress.aztec.demo.MediaToolbarGalleryButton
 import org.wordpress.aztec.glideloader.GlideImageLoader
 import org.wordpress.aztec.glideloader.GlideVideoThumbnailLoader
-import org.wordpress.aztec.plugins.BackgroundColorButton
-import org.wordpress.aztec.plugins.CssBackgroundColorPlugin
 import org.wordpress.aztec.plugins.CssUnderlinePlugin
 import org.wordpress.aztec.plugins.IMediaToolbarButton
 import org.wordpress.aztec.plugins.shortcodes.AudioShortcodePlugin
@@ -70,7 +66,7 @@ import org.wordpress.aztec.plugins.wpcomments.HiddenGutenbergPlugin
 import org.wordpress.aztec.plugins.wpcomments.WordPressCommentsPlugin
 import org.wordpress.aztec.toolbar.AztecToolbar
 import org.wordpress.aztec.toolbar.IAztecToolbarClickListener
-import org.wordpress.aztec.toolbar.ToolbarItems
+import org.wordpress.aztec.toolbar.ToolbarAction
 import org.xml.sax.Attributes
 import java.io.File
 import java.util.Locale
@@ -107,13 +103,15 @@ class AztecEditorActivity : AppCompatActivity(),
             title: String,
             placeholder: String?,
             initialHtml: String?,
-            theme: String?
+            theme: String?,
+            toolbarOptions: List<ToolbarOptions>
         ): Intent {
             return Intent(activity, AztecEditorActivity::class.java).apply {
                 putExtra("title", title)
                 putExtra("placeholder", placeholder)
                 putExtra("initialHtml", initialHtml)
                 putExtra("theme", theme)
+                putIntegerArrayListExtra("toolbarOptions", ArrayList(toolbarOptions.map { it.raw }))
             }
         }
     }
@@ -144,6 +142,11 @@ class AztecEditorActivity : AppCompatActivity(),
         setupEditorConfiguration()
         setupAztecEditor(savedInstanceState)
         setupInvalidateOptionsHandler()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        setupAztecToolbar()
     }
 
     override fun onPause() {
@@ -231,10 +234,11 @@ class AztecEditorActivity : AppCompatActivity(),
         val defaultAppBarTextColor = if (isDarkMode) Color.WHITE else Color.BLACK
         val appBarColor = intent.getIntExtra("appBarColor", defaultAppBarColor)
         val appBarTextColor = intent.getIntExtra("appBarTextColor", defaultAppBarTextColor)
-
         val visualEditor = findViewById<AztecText>(R.id.aztec)
         val aztecToolbar = findViewById<AztecToolbar>(R.id.formatting_toolbar)
         val topToolbar = findViewById<Toolbar>(R.id.top_toolbar)
+
+        val toolbarOptions = availableToolbarOptions()
 
         topToolbar.setBackgroundColor(appBarColor)
         topToolbar.setTitleTextColor(appBarTextColor)
@@ -254,37 +258,7 @@ class AztecEditorActivity : AppCompatActivity(),
         visualEditor.setBackgroundColor(defaultAppBarColor)
         visualEditor.setTextAppearance(android.R.style.TextAppearance)
         visualEditor.hint = intent.getStringExtra("placeholder") ?: getString(R.string.edit_hint)
-
         aztecToolbar.setBackgroundColor(defaultAppBarColor)
-
-
-        val toolbarGalleryButton = MediaToolbarGalleryButton(aztecToolbar).apply {
-            setMediaToolbarButtonClickListener(object :
-                IMediaToolbarButton.IMediaToolbarClickListener {
-                override fun onClick(view: View) {
-                    mediaMenu = PopupMenu(this@AztecEditorActivity, view).apply {
-                        setOnMenuItemClickListener(this@AztecEditorActivity)
-                        inflate(R.menu.menu_gallery)
-                        show()
-                    }
-                    if (view is ToggleButton) view.isChecked = false
-                }
-            })
-        }
-
-        val toolbarCameraButton = MediaToolbarCameraButton(aztecToolbar).apply {
-            setMediaToolbarButtonClickListener(object :
-                IMediaToolbarButton.IMediaToolbarClickListener {
-                override fun onClick(view: View) {
-                    mediaMenu = PopupMenu(this@AztecEditorActivity, view).apply {
-                        setOnMenuItemClickListener(this@AztecEditorActivity)
-                        inflate(R.menu.menu_camera)
-                        show()
-                    }
-                    if (view is ToggleButton) view.isChecked = false
-                }
-            })
-        }
 
         aztec = Aztec.with(visualEditor, aztecToolbar, this)
             .setImageGetter(GlideImageLoader(this))
@@ -301,9 +275,40 @@ class AztecEditorActivity : AppCompatActivity(),
             .addPlugin(CaptionShortcodePlugin(visualEditor))
             .addPlugin(VideoShortcodePlugin())
             .addPlugin(AudioShortcodePlugin())
+            .addPlugin(CssUnderlinePlugin())
             .addPlugin(HiddenGutenbergPlugin(visualEditor))
-            .addPlugin(toolbarGalleryButton)
-            .addPlugin(toolbarCameraButton)
+
+        if (toolbarOptions.contains(ToolbarOptions.VIDEO)) {
+            aztec.addPlugin(MediaToolbarImageButton(aztecToolbar).apply {
+                setMediaToolbarButtonClickListener(object :
+                    IMediaToolbarButton.IMediaToolbarClickListener {
+                    override fun onClick(view: View) {
+                        mediaMenu = PopupMenu(this@AztecEditorActivity, view).apply {
+                            setOnMenuItemClickListener(this@AztecEditorActivity)
+                            inflate(R.menu.menu_image)
+                            show()
+                        }
+                        if (view is ToggleButton) view.isChecked = false
+                    }
+                })
+            })
+        }
+
+        if (toolbarOptions.contains(ToolbarOptions.IMAGE)) {
+            aztec.addPlugin(MediaToolbarVideoButton(aztecToolbar).apply {
+                setMediaToolbarButtonClickListener(object :
+                    IMediaToolbarButton.IMediaToolbarClickListener {
+                    override fun onClick(view: View) {
+                        mediaMenu = PopupMenu(this@AztecEditorActivity, view).apply {
+                            setOnMenuItemClickListener(this@AztecEditorActivity)
+                            inflate(R.menu.menu_video)
+                            show()
+                        }
+                        if (view is ToggleButton) view.isChecked = false
+                    }
+                })
+            })
+        }
 
         aztec.visualEditor.enableCrashLogging(object :
             AztecExceptionHandler.ExceptionHandlerHelper {
@@ -312,12 +317,6 @@ class AztecEditorActivity : AppCompatActivity(),
 
         aztec.visualEditor.setCalypsoMode(false)
         aztec.sourceEditor?.setCalypsoMode(false)
-        aztec.visualEditor.setBackgroundSpanColor(
-            ContextCompat.getColor(this, org.wordpress.aztec.R.color.blue_dark)
-        )
-        aztec.addPlugin(CssUnderlinePlugin())
-        aztec.addPlugin(CssBackgroundColorPlugin())
-        aztec.addPlugin(BackgroundColorButton(visualEditor))
         aztec.visualEditor.fromHtml(intent.getStringExtra("initialHtml") ?: "")
 
         if (savedInstanceState == null) {
@@ -325,17 +324,120 @@ class AztecEditorActivity : AppCompatActivity(),
         }
     }
 
+    private fun setupAztecToolbar() {
+        findViewById<AztecToolbar>(R.id.formatting_toolbar)?.let { toolbar ->
+            val stateList = AppCompatResources.getColorStateList(
+                this@AztecEditorActivity, R.color.toolbar_button_tint_selector
+            )
 
-    private fun setupToolbarOptions(toolbar: AztecToolbar) {
-        toolbar.setToolbarItems(
-            ToolbarItems.defaultAdvancedLayout
-        )
+            val toolbarOptions = availableToolbarOptions().mapNotNull { toAztecId(it) }.toSet()
+
+            ToolbarAction.entries.forEach { action ->
+                toolbar.findViewById<View>(action.buttonId)?.let {
+                    it.backgroundTintList = stateList
+                    if (toolbarOptions.contains(action.buttonId)) {
+                        it.visibility = View.VISIBLE
+                    } else {
+                        it.visibility = View.GONE
+                    }
+                }
+            }
+
+            toolbar.findViewById<View>(org.wordpress.aztec.R.id.format_bar_vertical_divider)?.let {
+                if (
+                    toolbarOptions.contains(org.wordpress.aztec.R.id.format_bar_button_media_collapsed) ||
+                    toolbarOptions.contains(org.wordpress.aztec.R.id.format_bar_button_media_expanded)
+                ) {
+                    it.setBackgroundColor(
+                        ContextCompat.getColor(
+                            this,
+                            R.color.aztec_toolbar_border
+                        )
+                    )
+                    it.visibility = View.VISIBLE
+                } else {
+                    it.visibility = View.GONE
+                }
+            }
+        }
+    }
+
+    private fun availableToolbarOptions(): List<ToolbarOptions> {
+        val options = intent.getIntegerArrayListExtra("toolbarOptions")
+        val toolbarOptions = options?.map { ToolbarOptions.ofRaw(it) } ?: ToolbarOptions.entries
+        return toolbarOptions.filterNotNull()
     }
 
     private fun setupInvalidateOptionsHandler() {
         invalidateOptionsHandler = Handler(Looper.getMainLooper())
         invalidateOptionsRunnable = Runnable { invalidateOptionsMenu() }
     }
+
+    private fun toAztecId(option: ToolbarOptions): Int? {
+        when (option) {
+            ToolbarOptions.BOLD -> {
+                return org.wordpress.aztec.R.id.format_bar_button_bold
+            }
+
+            ToolbarOptions.ITALIC -> {
+                return org.wordpress.aztec.R.id.format_bar_button_italic
+            }
+
+            ToolbarOptions.UNDERLINE -> {
+                return org.wordpress.aztec.R.id.format_bar_button_underline
+            }
+
+            ToolbarOptions.STRIKE_THROUGH -> {
+                return org.wordpress.aztec.R.id.format_bar_button_strikethrough
+            }
+
+            ToolbarOptions.HEADING -> {
+                return org.wordpress.aztec.R.id.format_bar_button_heading
+            }
+
+            ToolbarOptions.ORDERED_LIST -> {
+                return org.wordpress.aztec.R.id.format_bar_button_list_ordered
+            }
+
+            ToolbarOptions.UNORDERED_LIST -> {
+                return org.wordpress.aztec.R.id.format_bar_button_list_unordered
+            }
+
+            ToolbarOptions.BLOCK_QUOTE -> {
+                return org.wordpress.aztec.R.id.format_bar_button_quote
+            }
+
+            ToolbarOptions.ALIGN_LEFT -> {
+                return org.wordpress.aztec.R.id.format_bar_button_align_left
+            }
+
+            ToolbarOptions.ALIGN_CENTER -> {
+                return org.wordpress.aztec.R.id.format_bar_button_align_center
+            }
+
+            ToolbarOptions.ALIGN_RIGHT -> {
+                return org.wordpress.aztec.R.id.format_bar_button_align_right
+            }
+
+            ToolbarOptions.LINK -> {
+                return org.wordpress.aztec.R.id.format_bar_button_link
+            }
+
+            ToolbarOptions.HORIZONTAL_RULE -> {
+                return org.wordpress.aztec.R.id.format_bar_button_horizontal_rule
+            }
+
+            ToolbarOptions.IMAGE, ToolbarOptions.VIDEO -> {
+                return org.wordpress.aztec.R.id.format_bar_button_media_collapsed
+            }
+
+            else -> {
+                return null
+            }
+        }
+    }
+
+
     // endregion
 
     // region Media Handling

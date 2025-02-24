@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import com.zebradevs.aztec.AztecEditorApi
 import com.zebradevs.aztec.EditorConfig
+import com.zebradevs.aztec.ToolbarOptions
 import com.zebradevs.aztec.utils.runOnUi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -72,12 +73,19 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
         runOnUi {
             activity?.let { activity ->
                 pendingResult = callback
+
+                var toolbarOptions = config.toolbarOptions ?: ToolbarOptions.entries
+                if (toolbarOptions.isEmpty()) {
+                    toolbarOptions = ToolbarOptions.entries
+                }
+
                 val intent = AztecEditorActivity.createIntent(
                     activity,
                     title = config.title,
                     placeholder = config.placeholder,
                     initialHtml = initialHtml,
-                    theme = config.theme.toString()
+                    theme = config.theme.toString(),
+                    toolbarOptions = toolbarOptions
                 )
 
                 activity.startActivityForResult(

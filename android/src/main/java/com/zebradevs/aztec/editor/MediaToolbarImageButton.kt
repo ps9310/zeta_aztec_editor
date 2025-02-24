@@ -1,4 +1,4 @@
-package org.wordpress.aztec.demo
+package com.zebradevs.aztec.editor
 
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -10,11 +10,11 @@ import org.wordpress.aztec.plugins.IMediaToolbarButton
 import org.wordpress.aztec.toolbar.AztecToolbar
 import org.wordpress.aztec.toolbar.IToolbarAction
 
-class MediaToolbarGalleryButton(val toolbar: AztecToolbar) : IMediaToolbarButton {
+class MediaToolbarImageButton(val toolbar: AztecToolbar) : IMediaToolbarButton {
 
     private var clickListener: IMediaToolbarButton.IMediaToolbarClickListener? = null
 
-    override val action: IToolbarAction = MediaToolbarAction.GALLERY
+    override val action: IToolbarAction = MediaToolbarAction.IMAGE
     override val context = toolbar.context!!
 
     override fun setMediaToolbarButtonClickListener(clickListener: IMediaToolbarButton.IMediaToolbarClickListener) {
@@ -30,7 +30,7 @@ class MediaToolbarGalleryButton(val toolbar: AztecToolbar) : IMediaToolbarButton
     }
 
     override fun inflateButton(parent: ViewGroup) {
-        LayoutInflater.from(context).inflate(R.layout.media_toobar_gallery_button, parent)
+        LayoutInflater.from(context).inflate(R.layout.media_toobar_camera_button, parent)
     }
 
     override fun toolbarStateAboutToChange(toolbar: AztecToolbar, enable: Boolean) {

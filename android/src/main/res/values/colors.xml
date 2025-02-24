@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#ff0000</color>
-    <color name="colorPrimaryDark">#A20000</color>
-    <color name="colorAccent">#FFEB3B</color>
-    <color name="black">#000000</color>
-    <color name="dark_gray">#343434</color>
-    <color name="light_gray">#4D4D4D</color>
+    <color name="aztec_toolbar_border">#CCCCCC</color>
+    <color name="aztec_icon_color">#1D1E23</color>
+    <color name="aztec_icon_selected_color">#0073E6</color>
+    <color name="aztec_icon_disabled_color">#8D95A3</color>
 </resources>

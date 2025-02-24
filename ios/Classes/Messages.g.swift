@@ -73,26 +73,17 @@ enum ToolbarOptions: Int {
   case italic = 1
   case underline = 2
   case strikeThrough = 3
-  case heading1 = 4
-  case heading2 = 5
-  case heading3 = 6
-  case heading4 = 7
-  case heading5 = 8
-  case heading6 = 9
-  case orderedList = 10
-  case unorderedList = 11
-  case blockQuote = 12
-  case alignLeft = 13
-  case alignCenter = 14
-  case alignRight = 15
-  case alignJustify = 16
-  case textColor = 17
-  case backgroundColor = 18
-  case link = 19
-  case image = 20
-  case video = 21
-  case horizontalRule = 22
-  case removeFormat = 23
+  case heading = 4
+  case orderedList = 5
+  case unorderedList = 6
+  case blockQuote = 7
+  case alignLeft = 8
+  case alignCenter = 9
+  case alignRight = 10
+  case link = 11
+  case image = 12
+  case video = 13
+  case horizontalRule = 14
 }
 
 enum Theme: Int {
