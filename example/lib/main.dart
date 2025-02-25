@@ -36,14 +36,6 @@ class _MyAppState extends State<MyApp> {
       placeholder: 'Hint from flutter...',
       theme: theme,
       title: 'Add Instructions',
-      toolbarOptions: [
-        editor.ToolbarOptions.bold,
-        editor.ToolbarOptions.image,
-        editor.ToolbarOptions.video,
-        editor.ToolbarOptions.italic,
-        editor.ToolbarOptions.underline,
-        editor.ToolbarOptions.strikeThrough,
-      ],
     );
 
     editor.ZetaAztecEditor().launch(initialHtml: _html, config: config).then((value) {

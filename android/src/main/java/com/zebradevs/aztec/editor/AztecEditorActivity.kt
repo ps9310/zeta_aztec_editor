@@ -67,6 +67,7 @@ import org.wordpress.aztec.plugins.wpcomments.WordPressCommentsPlugin
 import org.wordpress.aztec.toolbar.AztecToolbar
 import org.wordpress.aztec.toolbar.IAztecToolbarClickListener
 import org.wordpress.aztec.toolbar.ToolbarAction
+import org.wordpress.aztec.toolbar.ToolbarItems
 import org.xml.sax.Attributes
 import java.io.File
 import java.util.Locale
@@ -146,7 +147,9 @@ class AztecEditorActivity : AppCompatActivity(),
 
     override fun onStart() {
         super.onStart()
-        setupAztecToolbar()
+        findViewById<AztecToolbar>(R.id.formatting_toolbar)?.let { toolbar ->
+            setupAztecToolbar(toolbar)
+        }
     }
 
     override fun onPause() {
@@ -260,6 +263,13 @@ class AztecEditorActivity : AppCompatActivity(),
         visualEditor.hint = intent.getStringExtra("placeholder") ?: getString(R.string.edit_hint)
         aztecToolbar.setBackgroundColor(defaultAppBarColor)
 
+        val toolbarActions = availableToolbarOptions().mapNotNull { toAztecOption(it) }.toSet()
+        aztecToolbar.setToolbarItems(
+            ToolbarItems.BasicLayout(
+                *toolbarActions.toTypedArray()
+            )
+        )
+
         aztec = Aztec.with(visualEditor, aztecToolbar, this)
             .setImageGetter(GlideImageLoader(this))
             .setVideoThumbnailGetter(GlideVideoThumbnailLoader(this))
@@ -324,40 +334,36 @@ class AztecEditorActivity : AppCompatActivity(),
         }
     }
 
-    private fun setupAztecToolbar() {
-        findViewById<AztecToolbar>(R.id.formatting_toolbar)?.let { toolbar ->
-            val stateList = AppCompatResources.getColorStateList(
-                this@AztecEditorActivity, R.color.toolbar_button_tint_selector
-            )
+    private fun setupAztecToolbar(toolbar: AztecToolbar) {
+        val availableToolbarOptions = availableToolbarOptions()
+        val toolbarActions = availableToolbarOptions.mapNotNull { toAztecOption(it) }.toSet()
 
-            val toolbarOptions = availableToolbarOptions().mapNotNull { toAztecId(it) }.toSet()
+        val stateList = AppCompatResources.getColorStateList(
+            this@AztecEditorActivity, R.color.toolbar_button_tint_selector
+        )
 
-            ToolbarAction.entries.forEach { action ->
-                toolbar.findViewById<View>(action.buttonId)?.let {
-                    it.backgroundTintList = stateList
-                    if (toolbarOptions.contains(action.buttonId)) {
-                        it.visibility = View.VISIBLE
-                    } else {
-                        it.visibility = View.GONE
-                    }
-                }
+        // Set the color state list for each toolbar button and hide/show them based on the options
+        toolbarActions.forEach { action ->
+            toolbar.findViewById<View>(action.buttonId)?.let {
+                it.backgroundTintList = stateList
             }
+        }
 
-            toolbar.findViewById<View>(org.wordpress.aztec.R.id.format_bar_vertical_divider)?.let {
-                if (
-                    toolbarOptions.contains(org.wordpress.aztec.R.id.format_bar_button_media_collapsed) ||
-                    toolbarOptions.contains(org.wordpress.aztec.R.id.format_bar_button_media_expanded)
-                ) {
-                    it.setBackgroundColor(
-                        ContextCompat.getColor(
-                            this,
-                            R.color.aztec_toolbar_border
-                        )
+        // Set the color state list for the vertical divider and hide/show it based on the options
+        toolbar.findViewById<View>(org.wordpress.aztec.R.id.format_bar_vertical_divider)?.let {
+            if (
+                availableToolbarOptions.contains(ToolbarOptions.IMAGE)
+                || availableToolbarOptions.contains(ToolbarOptions.VIDEO)
+            ) {
+                it.setBackgroundColor(
+                    ContextCompat.getColor(
+                        this,
+                        R.color.aztec_toolbar_border
                     )
-                    it.visibility = View.VISIBLE
-                } else {
-                    it.visibility = View.GONE
-                }
+                )
+                it.visibility = View.VISIBLE
+            } else {
+                it.visibility = View.GONE
             }
         }
     }
@@ -373,70 +379,29 @@ class AztecEditorActivity : AppCompatActivity(),
         invalidateOptionsRunnable = Runnable { invalidateOptionsMenu() }
     }
 
-    private fun toAztecId(option: ToolbarOptions): Int? {
-        when (option) {
-            ToolbarOptions.BOLD -> {
-                return org.wordpress.aztec.R.id.format_bar_button_bold
-            }
-
-            ToolbarOptions.ITALIC -> {
-                return org.wordpress.aztec.R.id.format_bar_button_italic
-            }
-
-            ToolbarOptions.UNDERLINE -> {
-                return org.wordpress.aztec.R.id.format_bar_button_underline
-            }
-
-            ToolbarOptions.STRIKE_THROUGH -> {
-                return org.wordpress.aztec.R.id.format_bar_button_strikethrough
-            }
-
-            ToolbarOptions.HEADING -> {
-                return org.wordpress.aztec.R.id.format_bar_button_heading
-            }
-
-            ToolbarOptions.ORDERED_LIST -> {
-                return org.wordpress.aztec.R.id.format_bar_button_list_ordered
-            }
-
-            ToolbarOptions.UNORDERED_LIST -> {
-                return org.wordpress.aztec.R.id.format_bar_button_list_unordered
-            }
-
-            ToolbarOptions.BLOCK_QUOTE -> {
-                return org.wordpress.aztec.R.id.format_bar_button_quote
-            }
-
-            ToolbarOptions.ALIGN_LEFT -> {
-                return org.wordpress.aztec.R.id.format_bar_button_align_left
-            }
-
-            ToolbarOptions.ALIGN_CENTER -> {
-                return org.wordpress.aztec.R.id.format_bar_button_align_center
-            }
-
-            ToolbarOptions.ALIGN_RIGHT -> {
-                return org.wordpress.aztec.R.id.format_bar_button_align_right
-            }
-
-            ToolbarOptions.LINK -> {
-                return org.wordpress.aztec.R.id.format_bar_button_link
-            }
-
-            ToolbarOptions.HORIZONTAL_RULE -> {
-                return org.wordpress.aztec.R.id.format_bar_button_horizontal_rule
-            }
-
-            ToolbarOptions.IMAGE, ToolbarOptions.VIDEO -> {
-                return org.wordpress.aztec.R.id.format_bar_button_media_collapsed
-            }
-
-            else -> {
-                return null
-            }
-        }
+    private fun toAztecOption(option: ToolbarOptions): ToolbarAction? {
+        if (ToolbarOptions.BOLD == option) return ToolbarAction.BOLD
+        if (ToolbarOptions.ITALIC == option) return ToolbarAction.ITALIC
+        if (ToolbarOptions.UNDERLINE == option) return ToolbarAction.UNDERLINE
+        if (ToolbarOptions.STRIKETHROUGH == option) return ToolbarAction.STRIKETHROUGH
+        if (ToolbarOptions.HEADING == option) return ToolbarAction.HEADING
+        if (ToolbarOptions.LIST == option) return ToolbarAction.LIST
+        if (ToolbarOptions.UNORDERED_LIST == option) return ToolbarAction.UNORDERED_LIST
+        if (ToolbarOptions.ORDERED_LIST == option) return ToolbarAction.ORDERED_LIST
+        if (ToolbarOptions.TASK_LIST == option) return ToolbarAction.TASK_LIST
+        if (ToolbarOptions.INDENT == option) return ToolbarAction.INDENT
+        if (ToolbarOptions.OUTDENT == option) return ToolbarAction.OUTDENT
+        if (ToolbarOptions.ALIGN_LEFT == option) return ToolbarAction.ALIGN_LEFT
+        if (ToolbarOptions.ALIGN_CENTER == option) return ToolbarAction.ALIGN_CENTER
+        if (ToolbarOptions.ALIGN_RIGHT == option) return ToolbarAction.ALIGN_RIGHT
+        if (ToolbarOptions.QUOTE == option) return ToolbarAction.QUOTE
+        if (ToolbarOptions.LINK == option) return ToolbarAction.LINK
+        if (ToolbarOptions.CODE == option) return ToolbarAction.CODE
+        if (ToolbarOptions.PREFORMAT == option) return ToolbarAction.PREFORMAT
+        if (ToolbarOptions.HORIZONTAL_RULE == option) return ToolbarAction.HORIZONTAL_RULE
+        if (ToolbarOptions.IMAGE == option || ToolbarOptions.VIDEO == option) return ToolbarAction.ADD_MEDIA_COLLAPSE
+        return null
     }
-
 
     // endregion
 
@@ -613,6 +578,7 @@ class AztecEditorActivity : AppCompatActivity(),
             )
             if (intent.resolveActivity(packageManager) != null) {
                 startActivityForResult(intent, REQUEST_MEDIA_CAMERA_PHOTO)
+
             }
         }
     }

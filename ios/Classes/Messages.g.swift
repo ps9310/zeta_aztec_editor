@@ -69,21 +69,27 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
 }
 
 enum ToolbarOptions: Int {
-  case bold = 0
-  case italic = 1
-  case underline = 2
-  case strikeThrough = 3
-  case heading = 4
-  case orderedList = 5
-  case unorderedList = 6
-  case blockQuote = 7
-  case alignLeft = 8
-  case alignCenter = 9
-  case alignRight = 10
-  case link = 11
-  case image = 12
-  case video = 13
-  case horizontalRule = 14
+  case bOLD = 0
+  case iTALIC = 1
+  case uNDERLINE = 2
+  case sTRIKETHROUGH = 3
+  case hEADING = 4
+  case lIST = 5
+  case uNORDEREDLIST = 6
+  case oRDEREDLIST = 7
+  case tASKLIST = 8
+  case iNDENT = 9
+  case oUTDENT = 10
+  case aLIGNLEFT = 11
+  case aLIGNCENTER = 12
+  case aLIGNRIGHT = 13
+  case qUOTE = 14
+  case lINK = 15
+  case cODE = 16
+  case pREFORMAT = 17
+  case hORIZONTALRULE = 18
+  case iMAGE = 19
+  case vIDEO = 20
 }
 
 enum Theme: Int {

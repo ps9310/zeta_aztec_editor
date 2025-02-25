@@ -1,4 +1,4 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
+// ignore_for_file: public_member_api_docs, sort_constructors_first, constant_identifier_names
 import 'package:pigeon/pigeon.dart';
 
 @ConfigurePigeon(
@@ -27,21 +27,40 @@ import 'package:pigeon/pigeon.dart';
   ),
 )
 enum ToolbarOptions {
-  bold,
-  italic,
-  underline,
-  strikeThrough,
-  heading,
-  orderedList,
-  unorderedList,
-  blockQuote,
-  alignLeft,
-  alignCenter,
-  alignRight,
-  link,
-  image,
-  video,
-  horizontalRule,
+  // Text Styling
+  BOLD,
+  ITALIC,
+  UNDERLINE,
+  STRIKETHROUGH,
+
+  // Headings & Block Styles
+  HEADING,
+
+  // Lists & Related Controls
+  LIST,
+  UNORDERED_LIST,
+  ORDERED_LIST,
+  TASK_LIST,
+
+  // Indentation & Alignment
+  INDENT,
+  OUTDENT,
+  ALIGN_LEFT,
+  ALIGN_CENTER,
+  ALIGN_RIGHT,
+
+  // Additional Formatting
+  QUOTE,
+  LINK,
+
+  // Code & Preformatted Text
+  CODE,
+  PREFORMAT,
+
+  // Media & Dividers
+  HORIZONTAL_RULE,
+  IMAGE,
+  VIDEO,
 }
 
 enum Theme {

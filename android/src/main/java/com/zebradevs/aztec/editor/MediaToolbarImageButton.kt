@@ -4,8 +4,6 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.zebradevs.aztec.editor.MediaToolbarAction
-import com.zebradevs.aztec.editor.R
 import org.wordpress.aztec.plugins.IMediaToolbarButton
 import org.wordpress.aztec.toolbar.AztecToolbar
 import org.wordpress.aztec.toolbar.IToolbarAction
