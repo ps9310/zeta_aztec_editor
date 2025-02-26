@@ -97,9 +97,14 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
   }
 
   @override
-  Future<String?> onFileSelected(String editorToken, String filePath) async {
+  Future<String?> onAztecFileSelected(String filePath) async {
     await Future.delayed(const Duration(seconds: 1));
     return 'https://picsum.photos/id/237/200/300'; // upload success
     // return null; // upload failed
+  }
+
+  @override
+  void onAztecFileDeleted(String filePath) {
+    // Delete the file from the server
   }
 }

@@ -192,6 +192,8 @@ abstract class AztecFlutterApi {
 
   Future<String?> onFileSelected(String editorToken, String filePath);
 
+  void onFileDeleted(String editorToken, String filePath);
+
   static void setUp(AztecFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
     messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
     {
@@ -214,6 +216,34 @@ abstract class AztecFlutterApi {
           try {
             final String? output = await api.onFileSelected(arg_editorToken!, arg_filePath!);
             return wrapResponse(result: output);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final String? arg_editorToken = (args[0] as String?);
+          assert(arg_editorToken != null,
+              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted was null, expected non-null String.');
+          final String? arg_filePath = (args[1] as String?);
+          assert(arg_filePath != null,
+              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted was null, expected non-null String.');
+          try {
+            api.onFileDeleted(arg_editorToken!, arg_filePath!);
+            return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
           }          catch (e) {

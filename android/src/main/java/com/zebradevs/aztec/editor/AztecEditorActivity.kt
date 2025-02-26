@@ -604,6 +604,12 @@ class AztecEditorActivity : AppCompatActivity(),
 
             aztec.visualEditor.refreshText()
             aztec.visualEditor.refreshDrawableState()
+        } ?: run {
+            runOnUiThread { ToastUtils.showToast(this, "Media upload failed!") }
+            aztec.visualEditor.clearOverlays(predicate)
+            aztec.visualEditor.removeMedia(predicate)
+            aztec.visualEditor.refreshText()
+            aztec.visualEditor.refreshDrawableState()
         }
 
         aztec.visualEditor.refreshText()
@@ -960,8 +966,11 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     override fun onMediaDeleted(attrs: AztecAttributes) {
-        val url = attrs.getValue("src")
-        ToastUtils.showToast(this, "Media Deleted! $url")
+        try {
+            AztecFlutterContainer.flutterApi?.onFileDeleted(editorToken(), attrs.getValue("src")) {}
+        } catch (e: Exception) {
+            AppLog.e(AppLog.T.EDITOR, e)
+        }
     }
     // endregion
 

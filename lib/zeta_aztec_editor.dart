@@ -2,7 +2,11 @@ import 'package:zeta_aztec_editor/src/messages.g.dart';
 
 export 'src/messages.g.dart' hide AztecEditorApi, AztecFlutterApi;
 
-abstract class ZetaAztecEditorCallbacks implements AztecFlutterApi {}
+abstract class ZetaAztecEditorCallbacks {
+  Future<String?> onAztecFileSelected(String filePath);
+
+  void onAztecFileDeleted(String filePath);
+}
 
 class ZetaAztecEditor implements AztecFlutterApi {
   final _api = AztecEditorApi();
@@ -38,6 +42,11 @@ class ZetaAztecEditor implements AztecFlutterApi {
 
   @override
   Future<String?> onFileSelected(String editorToken, String filePath) {
-    return _callbacks[editorToken]?.onFileSelected(editorToken, filePath) ?? Future.value(null);
+    return _callbacks[editorToken]?.onAztecFileSelected(filePath) ?? Future.value(null);
+  }
+
+  @override
+  void onFileDeleted(String editorToken, String filePath) {
+    _callbacks[editorToken]?.onAztecFileDeleted(filePath);
   }
 }
