@@ -18,8 +18,8 @@ void main() {
     final ZetaAztecEditor plugin = ZetaAztecEditor();
     final version = await plugin.launch(
       initialHtml: 'initialHtml',
-      config: EditorConfig(
-        theme: Theme.system,
+      config: AztecEditorConfig(
+        theme: AztecEditorTheme.system,
         title: 'title',
       ),
     );

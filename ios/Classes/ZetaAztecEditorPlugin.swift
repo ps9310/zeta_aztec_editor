@@ -1,19 +1,27 @@
 import Flutter
 import UIKit
 
-public class ZetaAztecEditorPlugin: NSObject, FlutterPlugin {
-  public static func register(with registrar: FlutterPluginRegistrar) {
-    let channel = FlutterMethodChannel(name: "zeta_aztec_editor", binaryMessenger: registrar.messenger())
-    let instance = ZetaAztecEditorPlugin()
-    registrar.addMethodCallDelegate(instance, channel: channel)
-  }
-
-  public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    switch call.method {
-    case "getPlatformVersion":
-      result("iOS " + UIDevice.current.systemVersion)
-    default:
-      result(FlutterMethodNotImplemented)
+public class ZetaAztecEditorPlugin: NSObject, FlutterPlugin, AztecEditorApi {
+    
+    public static func register(with registrar: FlutterPluginRegistrar) {
+        let instance = ZetaAztecEditorPlugin()
+        AztecEditorApiSetup.setUp(binaryMessenger: registrar.messenger(), api: instance)
     }
-  }
+    
+    func launch(
+        initialHtml: String?,
+        editorToken: String,
+        config: AztecEditorConfig,
+        completion: @escaping (Result<String?, any Error>) -> Void
+    ) {
+        completion(.success((initialHtml ?? "") + "\n\nThis is added from the native code."))
+        
+        
+        
+        let controller = EditorDemoController(withSampleHTML: initialHtml, wordPressMode: true)
+        
+        UIApplication.shared.windows.first?.rootViewController?.present(controller, animated: true)
+        
+    }
+    
 }
