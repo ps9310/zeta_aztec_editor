@@ -22,13 +22,13 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.widget.PopupMenu
+import android.widget.ProgressBar
 import android.widget.ToggleButton
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
@@ -40,7 +40,8 @@ import androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.forEach
-import com.zebradevs.aztec.ToolbarOptions
+import com.zebradevs.aztec.AztecToolbarOption
+import com.zebradevs.aztec.messages.AztecFlutterContainer
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.ImageUtils
 import org.wordpress.android.util.PermissionUtils
@@ -102,13 +103,15 @@ class AztecEditorActivity : AppCompatActivity(),
         fun createIntent(
             activity: Activity,
             title: String,
+            editorToken: String,
             placeholder: String?,
             initialHtml: String?,
             theme: String?,
-            toolbarOptions: List<ToolbarOptions>
+            toolbarOptions: List<AztecToolbarOption>
         ): Intent {
             return Intent(activity, AztecEditorActivity::class.java).apply {
                 putExtra("title", title)
+                putExtra("editorToken", editorToken)
                 putExtra("placeholder", placeholder)
                 putExtra("initialHtml", initialHtml)
                 putExtra("theme", theme)
@@ -127,6 +130,7 @@ class AztecEditorActivity : AppCompatActivity(),
     private lateinit var invalidateOptionsRunnable: Runnable
 
     private var mediaUploadDialog: AlertDialog? = null
+    private var mediaProgressDialog: AlertDialog? = null
     private var mediaMenu: PopupMenu? = null
 
     private var mIsKeyboardOpen = false
@@ -231,6 +235,10 @@ class AztecEditorActivity : AppCompatActivity(),
         }
     }
 
+    private fun editorToken(): String {
+        return intent.getStringExtra("editorToken") ?: ""
+    }
+
     private fun setupAztecEditor(savedInstanceState: Bundle?) {
         val isDarkMode = isDarkMode()
         val defaultAppBarColor = if (isDarkMode) Color.BLACK else Color.WHITE
@@ -288,7 +296,7 @@ class AztecEditorActivity : AppCompatActivity(),
             .addPlugin(CssUnderlinePlugin())
             .addPlugin(HiddenGutenbergPlugin(visualEditor))
 
-        if (toolbarOptions.contains(ToolbarOptions.VIDEO)) {
+        if (toolbarOptions.contains(AztecToolbarOption.VIDEO)) {
             aztec.addPlugin(MediaToolbarImageButton(aztecToolbar).apply {
                 setMediaToolbarButtonClickListener(object :
                     IMediaToolbarButton.IMediaToolbarClickListener {
@@ -304,7 +312,7 @@ class AztecEditorActivity : AppCompatActivity(),
             })
         }
 
-        if (toolbarOptions.contains(ToolbarOptions.IMAGE)) {
+        if (toolbarOptions.contains(AztecToolbarOption.IMAGE)) {
             aztec.addPlugin(MediaToolbarVideoButton(aztecToolbar).apply {
                 setMediaToolbarButtonClickListener(object :
                     IMediaToolbarButton.IMediaToolbarClickListener {
@@ -352,8 +360,8 @@ class AztecEditorActivity : AppCompatActivity(),
         // Set the color state list for the vertical divider and hide/show it based on the options
         toolbar.findViewById<View>(org.wordpress.aztec.R.id.format_bar_vertical_divider)?.let {
             if (
-                availableToolbarOptions.contains(ToolbarOptions.IMAGE)
-                || availableToolbarOptions.contains(ToolbarOptions.VIDEO)
+                availableToolbarOptions.contains(AztecToolbarOption.IMAGE)
+                || availableToolbarOptions.contains(AztecToolbarOption.VIDEO)
             ) {
                 it.setBackgroundColor(
                     ContextCompat.getColor(
@@ -368,9 +376,10 @@ class AztecEditorActivity : AppCompatActivity(),
         }
     }
 
-    private fun availableToolbarOptions(): List<ToolbarOptions> {
+    private fun availableToolbarOptions(): List<AztecToolbarOption> {
         val options = intent.getIntegerArrayListExtra("toolbarOptions")
-        val toolbarOptions = options?.map { ToolbarOptions.ofRaw(it) } ?: ToolbarOptions.entries
+        val toolbarOptions =
+            options?.map { AztecToolbarOption.ofRaw(it) } ?: AztecToolbarOption.entries
         return toolbarOptions.filterNotNull()
     }
 
@@ -379,27 +388,27 @@ class AztecEditorActivity : AppCompatActivity(),
         invalidateOptionsRunnable = Runnable { invalidateOptionsMenu() }
     }
 
-    private fun toAztecOption(option: ToolbarOptions): ToolbarAction? {
-        if (ToolbarOptions.BOLD == option) return ToolbarAction.BOLD
-        if (ToolbarOptions.ITALIC == option) return ToolbarAction.ITALIC
-        if (ToolbarOptions.UNDERLINE == option) return ToolbarAction.UNDERLINE
-        if (ToolbarOptions.STRIKETHROUGH == option) return ToolbarAction.STRIKETHROUGH
-        if (ToolbarOptions.HEADING == option) return ToolbarAction.HEADING
-        if (ToolbarOptions.LIST == option) return ToolbarAction.LIST
-        if (ToolbarOptions.UNORDERED_LIST == option) return ToolbarAction.UNORDERED_LIST
-        if (ToolbarOptions.ORDERED_LIST == option) return ToolbarAction.ORDERED_LIST
-        if (ToolbarOptions.TASK_LIST == option) return ToolbarAction.TASK_LIST
-        if (ToolbarOptions.INDENT == option) return ToolbarAction.INDENT
-        if (ToolbarOptions.OUTDENT == option) return ToolbarAction.OUTDENT
-        if (ToolbarOptions.ALIGN_LEFT == option) return ToolbarAction.ALIGN_LEFT
-        if (ToolbarOptions.ALIGN_CENTER == option) return ToolbarAction.ALIGN_CENTER
-        if (ToolbarOptions.ALIGN_RIGHT == option) return ToolbarAction.ALIGN_RIGHT
-        if (ToolbarOptions.QUOTE == option) return ToolbarAction.QUOTE
-        if (ToolbarOptions.LINK == option) return ToolbarAction.LINK
-        if (ToolbarOptions.CODE == option) return ToolbarAction.CODE
-        if (ToolbarOptions.PREFORMAT == option) return ToolbarAction.PREFORMAT
-        if (ToolbarOptions.HORIZONTAL_RULE == option) return ToolbarAction.HORIZONTAL_RULE
-        if (ToolbarOptions.IMAGE == option || ToolbarOptions.VIDEO == option) return ToolbarAction.ADD_MEDIA_COLLAPSE
+    private fun toAztecOption(option: AztecToolbarOption): ToolbarAction? {
+        if (AztecToolbarOption.BOLD == option) return ToolbarAction.BOLD
+        if (AztecToolbarOption.ITALIC == option) return ToolbarAction.ITALIC
+        if (AztecToolbarOption.UNDERLINE == option) return ToolbarAction.UNDERLINE
+        if (AztecToolbarOption.STRIKETHROUGH == option) return ToolbarAction.STRIKETHROUGH
+        if (AztecToolbarOption.HEADING == option) return ToolbarAction.HEADING
+        if (AztecToolbarOption.LIST == option) return ToolbarAction.LIST
+        if (AztecToolbarOption.UNORDERED_LIST == option) return ToolbarAction.UNORDERED_LIST
+        if (AztecToolbarOption.ORDERED_LIST == option) return ToolbarAction.ORDERED_LIST
+        if (AztecToolbarOption.TASK_LIST == option) return ToolbarAction.TASK_LIST
+        if (AztecToolbarOption.INDENT == option) return ToolbarAction.INDENT
+        if (AztecToolbarOption.OUTDENT == option) return ToolbarAction.OUTDENT
+        if (AztecToolbarOption.ALIGN_LEFT == option) return ToolbarAction.ALIGN_LEFT
+        if (AztecToolbarOption.ALIGN_CENTER == option) return ToolbarAction.ALIGN_CENTER
+        if (AztecToolbarOption.ALIGN_RIGHT == option) return ToolbarAction.ALIGN_RIGHT
+        if (AztecToolbarOption.QUOTE == option) return ToolbarAction.QUOTE
+        if (AztecToolbarOption.LINK == option) return ToolbarAction.LINK
+        if (AztecToolbarOption.CODE == option) return ToolbarAction.CODE
+        if (AztecToolbarOption.PREFORMAT == option) return ToolbarAction.PREFORMAT
+        if (AztecToolbarOption.HORIZONTAL_RULE == option) return ToolbarAction.HORIZONTAL_RULE
+        if (AztecToolbarOption.IMAGE == option || AztecToolbarOption.VIDEO == option) return ToolbarAction.ADD_MEDIA_COLLAPSE
         return null
     }
 
@@ -420,8 +429,8 @@ class AztecEditorActivity : AppCompatActivity(),
         when (requestCode) {
             REQUEST_MEDIA_CAMERA_PHOTO -> handleCameraPhotoResult()
             REQUEST_MEDIA_PHOTO -> handleGalleryPhotoResult(data)
-            REQUEST_MEDIA_CAMERA_VIDEO -> handleCameraVideoResult(data)
-            REQUEST_MEDIA_VIDEO -> handleGalleryVideoResult(data)
+            REQUEST_MEDIA_CAMERA_VIDEO -> handleVideoResult(data)
+            REQUEST_MEDIA_VIDEO -> handleVideoResult(data)
         }
         super.onActivityResult(requestCode, resultCode, data)
     }
@@ -429,7 +438,6 @@ class AztecEditorActivity : AppCompatActivity(),
     private fun handleCameraPhotoResult() {
         val options = BitmapFactory.Options().apply { inDensity = DisplayMetrics.DENSITY_DEFAULT }
         val bitmap = BitmapFactory.decodeFile(mediaPath, options)
-        Log.d("MediaPath", mediaPath)
         insertImageAndSimulateUpload(bitmap, mediaPath)
     }
 
@@ -441,13 +449,12 @@ class AztecEditorActivity : AppCompatActivity(),
         insertImageAndSimulateUpload(bitmap, mediaPath)
     }
 
-    private fun handleCameraVideoResult(data: Intent?) {
+    private fun handleVideoResult(data: Intent?) {
         mediaPath = data?.data.toString()
-        // Additional handling for camera video can be added here if needed.
+        createVideoThumbnailAndUpload()
     }
 
-    private fun handleGalleryVideoResult(data: Intent?) {
-        mediaPath = data?.data.toString()
+    private fun createVideoThumbnailAndUpload() {
         aztec.visualEditor.videoThumbnailGetter?.loadVideoThumbnail(
             mediaPath,
             object : Html.VideoThumbnailGetter.Callbacks {
@@ -472,8 +479,9 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun insertImageAndSimulateUpload(bitmap: Bitmap?, mediaPath: String) {
-        val bitmapResized =
-            ImageUtils.getScaledBitmapAtLongestSide(bitmap, aztec.visualEditor.maxImagesWidth)
+        val bitmapResized = ImageUtils.getScaledBitmapAtLongestSide(
+            bitmap, aztec.visualEditor.maxWidth
+        )
         val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = false)
         aztec.visualEditor.insertImage(BitmapDrawable(resources, bitmapResized), attrs)
         simulateMediaUpload(id, attrs)  // simulates upload progress and updates overlays
@@ -481,8 +489,9 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     fun insertVideoAndSimulateUpload(bitmap: Bitmap?, mediaPath: String) {
-        val bitmapResized =
-            ImageUtils.getScaledBitmapAtLongestSide(bitmap, aztec.visualEditor.maxImagesWidth)
+        val bitmapResized = ImageUtils.getScaledBitmapAtLongestSide(
+            bitmap, aztec.visualEditor.maxWidth
+        )
         val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = true)
         aztec.visualEditor.insertVideo(BitmapDrawable(resources, bitmapResized), attrs)
         simulateMediaUpload(id, attrs)
@@ -497,6 +506,7 @@ class AztecEditorActivity : AppCompatActivity(),
         val attrs = AztecAttributes().apply {
             setValue("src", mediaPath) // Temporary source value – replace with URL after upload.
             setValue("id", id)
+            setValue("width", "100%")
             setValue("uploading", "true")
             if (isVideo) setValue("video", "true")
         }
@@ -507,49 +517,53 @@ class AztecEditorActivity : AppCompatActivity(),
         val predicate = object : AztecText.AttributePredicate {
             override fun matches(attrs: Attributes): Boolean = attrs.getValue("id") == id
         }
+
         // Set initial overlay and progress drawable
         aztec.visualEditor.setOverlay(predicate, 0, ColorDrawable(0x80000000.toInt()), Gravity.FILL)
         aztec.visualEditor.updateElementAttributes(predicate, attrs)
-        val progressDrawable =
-            AppCompatResources.getDrawable(this, android.R.drawable.progress_horizontal)!!
-        progressDrawable.setBounds(0, 0, 0, 4)
+        val progressDrawable = AppCompatResources.getDrawable(
+            this, android.R.drawable.progress_horizontal
+        )
+        progressDrawable?.setBounds(0, 0, 0, 4)
         aztec.visualEditor.setOverlay(
             predicate,
             1,
             progressDrawable,
             Gravity.FILL_HORIZONTAL or Gravity.TOP
         )
+
         aztec.visualEditor.updateElementAttributes(predicate, attrs)
 
-        var progress = 0
-        val runnable = object : Runnable {
-            override fun run() {
-                aztec.visualEditor.setOverlayLevel(predicate, 1, progress)
-                aztec.visualEditor.updateElementAttributes(predicate, attrs)
-                aztec.visualEditor.resetAttributedMediaSpan(predicate)
-                progress += 2000
-                if (progress >= 10000) {
-                    attrs.removeAttribute(attrs.getIndex("uploading"))
-                    aztec.visualEditor.clearOverlays(predicate)
-                    if (attrs.hasAttribute("video")) {
-                        attrs.removeAttribute(attrs.getIndex("video"))
-                        aztec.visualEditor.setOverlay(
-                            predicate,
-                            0,
-                            AppCompatResources.getDrawable(
-                                this@AztecEditorActivity,
-                                android.R.drawable.ic_media_play
-                            ),
-                            Gravity.CENTER
-                        )
-                    }
-                    aztec.visualEditor.updateElementAttributes(predicate, attrs)
-                } else {
-                    Handler(Looper.getMainLooper()).postDelayed(this, 2000)
+        runOnUiThread { showMediaProgressBar() }
+        AztecFlutterContainer.flutterApi?.onFileSelected(editorToken(), mediaPath) {
+            runOnUiThread { mediaProgressDialog?.dismiss() }
+            if (it.isSuccess && it.getOrNull()?.isNotEmpty() == true) {
+                attrs.removeAttribute(attrs.getIndex("uploading"))
+                aztec.visualEditor.clearOverlays(predicate)
+                val videoIndex = attrs.getIndex("video")
+                if (videoIndex != -1) {
+                    attrs.removeAttribute(videoIndex)
+                    val playDrawable = AppCompatResources.getDrawable(
+                        this@AztecEditorActivity,
+                        android.R.drawable.ic_media_play
+                    )
+                    aztec.visualEditor.setOverlay(predicate, 0, playDrawable, Gravity.CENTER)
                 }
+
+                val index = attrs.getIndex("src")
+                if (index != -1) attrs.removeAttribute(index)
+                attrs.setValue("src", it.getOrNull() ?: "")
+                aztec.visualEditor.updateElementAttributes(predicate, attrs)
+            } else {
+                runOnUiThread { ToastUtils.showToast(this, "Media upload failed!") }
+                aztec.visualEditor.clearOverlays(predicate)
+                aztec.visualEditor.removeMedia(predicate)
             }
+
+            aztec.visualEditor.refreshText()
+            aztec.visualEditor.refreshDrawableState()
         }
-        Handler(Looper.getMainLooper()).post(runnable)
+
         aztec.visualEditor.refreshText()
     }
     // endregion
@@ -578,7 +592,6 @@ class AztecEditorActivity : AppCompatActivity(),
             )
             if (intent.resolveActivity(packageManager) != null) {
                 startActivityForResult(intent, REQUEST_MEDIA_CAMERA_PHOTO)
-
             }
         }
     }
@@ -588,7 +601,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 this, MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE
             )
         ) {
-            val intent = Intent(MediaStore.INTENT_ACTION_VIDEO_CAMERA)
+            val intent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
             if (intent.resolveActivity(packageManager) != null) {
                 startActivityForResult(intent, REQUEST_MEDIA_CAMERA_VIDEO)
             }
@@ -796,9 +809,7 @@ class AztecEditorActivity : AppCompatActivity(),
     // region Toolbar & Menu Item Callbacks
     override fun onToolbarCollapseButtonClicked() {}
     override fun onToolbarExpandButtonClicked() {}
-    override fun onToolbarFormatButtonClicked(format: ITextFormat, isKeyboardShortcut: Boolean) {
-        ToastUtils.showToast(this, format.toString())
-    }
+    override fun onToolbarFormatButtonClicked(format: ITextFormat, isKeyboardShortcut: Boolean) {}
 
     override fun onToolbarHeadingButtonClicked() {}
     override fun onToolbarHtmlButtonClicked() {
@@ -922,6 +933,17 @@ class AztecEditorActivity : AppCompatActivity(),
             )
             .create()
             .also { mediaUploadDialog = it; it.show() }
+    }
+
+    private fun showMediaProgressBar() {
+        AlertDialog.Builder(this)
+            .setCancelable(false)
+            .setView(ProgressBar(this))
+            .create()
+            .also {
+                it.show()
+                mediaProgressDialog = it
+            }
     }
     // endregion
 }

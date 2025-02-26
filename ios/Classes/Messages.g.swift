@@ -68,7 +68,7 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
   return value as! T?
 }
 
-enum ToolbarOptions: Int {
+enum AztecToolbarOption: Int {
   case bOLD = 0
   case iTALIC = 1
   case uNDERLINE = 2
@@ -92,36 +92,36 @@ enum ToolbarOptions: Int {
   case vIDEO = 20
 }
 
-enum Theme: Int {
+enum AztecEditorTheme: Int {
   case light = 0
   case dark = 1
   case system = 2
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
-struct EditorConfig {
+struct AztecEditorConfig {
   var primaryColor: String? = nil
   var backgroundColor: String? = nil
   var textColor: String? = nil
   var placeholder: String? = nil
   var fileExtensions: [String]? = nil
-  var toolbarOptions: [ToolbarOptions]? = nil
+  var toolbarOptions: [AztecToolbarOption]? = nil
   var title: String
-  var theme: Theme
+  var theme: AztecEditorTheme
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
-  static func fromList(_ pigeonVar_list: [Any?]) -> EditorConfig? {
+  static func fromList(_ pigeonVar_list: [Any?]) -> AztecEditorConfig? {
     let primaryColor: String? = nilOrValue(pigeonVar_list[0])
     let backgroundColor: String? = nilOrValue(pigeonVar_list[1])
     let textColor: String? = nilOrValue(pigeonVar_list[2])
     let placeholder: String? = nilOrValue(pigeonVar_list[3])
     let fileExtensions: [String]? = nilOrValue(pigeonVar_list[4])
-    let toolbarOptions: [ToolbarOptions]? = nilOrValue(pigeonVar_list[5])
+    let toolbarOptions: [AztecToolbarOption]? = nilOrValue(pigeonVar_list[5])
     let title = pigeonVar_list[6] as! String
-    let theme = pigeonVar_list[7] as! Theme
+    let theme = pigeonVar_list[7] as! AztecEditorTheme
 
-    return EditorConfig(
+    return AztecEditorConfig(
       primaryColor: primaryColor,
       backgroundColor: backgroundColor,
       textColor: textColor,
@@ -152,17 +152,17 @@ private class MessagesPigeonCodecReader: FlutterStandardReader {
     case 129:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return ToolbarOptions(rawValue: enumResultAsInt)
+        return AztecToolbarOption(rawValue: enumResultAsInt)
       }
       return nil
     case 130:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return Theme(rawValue: enumResultAsInt)
+        return AztecEditorTheme(rawValue: enumResultAsInt)
       }
       return nil
     case 131:
-      return EditorConfig.fromList(self.readValue() as! [Any?])
+      return AztecEditorConfig.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -171,13 +171,13 @@ private class MessagesPigeonCodecReader: FlutterStandardReader {
 
 private class MessagesPigeonCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
-    if let value = value as? ToolbarOptions {
+    if let value = value as? AztecToolbarOption {
       super.writeByte(129)
       super.writeValue(value.rawValue)
-    } else if let value = value as? Theme {
+    } else if let value = value as? AztecEditorTheme {
       super.writeByte(130)
       super.writeValue(value.rawValue)
-    } else if let value = value as? EditorConfig {
+    } else if let value = value as? AztecEditorConfig {
       super.writeByte(131)
       super.writeValue(value.toList())
     } else {
@@ -203,7 +203,7 @@ class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
 
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol AztecEditorApi {
-  func launch(initialHtml: String?, config: EditorConfig, completion: @escaping (Result<String?, Error>) -> Void)
+  func launch(initialHtml: String?, editorToken: String, config: AztecEditorConfig, completion: @escaping (Result<String?, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -217,8 +217,9 @@ class AztecEditorApiSetup {
       launchChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let initialHtmlArg: String? = nilOrValue(args[0])
-        let configArg = args[1] as! EditorConfig
-        api.launch(initialHtml: initialHtmlArg, config: configArg) { result in
+        let editorTokenArg = args[1] as! String
+        let configArg = args[2] as! AztecEditorConfig
+        api.launch(initialHtml: initialHtmlArg, editorToken: editorTokenArg, config: configArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -234,7 +235,7 @@ class AztecEditorApiSetup {
 }
 /// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
 protocol AztecFlutterApiProtocol {
-  func onFileSelected(filePath filePathArg: String, completion: @escaping (Result<String, PigeonError>) -> Void)
+  func onFileSelected(editorToken editorTokenArg: String, filePath filePathArg: String, completion: @escaping (Result<String?, PigeonError>) -> Void)
 }
 class AztecFlutterApi: AztecFlutterApiProtocol {
   private let binaryMessenger: FlutterBinaryMessenger
@@ -246,10 +247,10 @@ class AztecFlutterApi: AztecFlutterApiProtocol {
   var codec: MessagesPigeonCodec {
     return MessagesPigeonCodec.shared
   }
-  func onFileSelected(filePath filePathArg: String, completion: @escaping (Result<String, PigeonError>) -> Void) {
+  func onFileSelected(editorToken editorTokenArg: String, filePath filePathArg: String, completion: @escaping (Result<String?, PigeonError>) -> Void) {
     let channelName: String = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
-    channel.sendMessage([filePathArg] as [Any?]) { response in
+    channel.sendMessage([editorTokenArg, filePathArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return
@@ -259,10 +260,8 @@ class AztecFlutterApi: AztecFlutterApiProtocol {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(PigeonError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
-        completion(.failure(PigeonError(code: "null-error", message: "Flutter api returned null value for non-null return value.", details: "")))
       } else {
-        let result = listResponse[0] as! String
+        let result: String? = nilOrValue(listResponse[0])
         completion(.success(result))
       }
     }

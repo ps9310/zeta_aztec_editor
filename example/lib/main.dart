@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:zeta_aztec_editor/zeta_aztec_editor.dart' as editor;
+import 'package:zeta_aztec_editor/zeta_aztec_editor.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 
 void main() {
@@ -15,7 +15,7 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
   String _html = '''
   <h3>Heading</h3>
   <p>
@@ -27,18 +27,21 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _launchEditor(editor.Theme.system);
+    _launchEditor(AztecEditorTheme.system);
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> _launchEditor(editor.Theme theme) async {
-    final config = editor.EditorConfig(
+  Future<void> _launchEditor(AztecEditorTheme theme) async {
+    final config = AztecEditorConfig(
       placeholder: 'Hint from flutter...',
       theme: theme,
       title: 'Add Instructions',
+      toolbarOptions: [
+        ...AztecToolbarOption.values,
+      ]..remove(AztecToolbarOption.LIST),
     );
 
-    editor.ZetaAztecEditor().launch(initialHtml: _html, config: config).then((value) {
+    ZetaAztecEditor().launch(initialHtml: _html, config: config, callback: this).then((value) {
       if (mounted && value != null) {
         setState(() {
           _html = value;
@@ -65,21 +68,38 @@ class _MyAppState extends State<MyApp> {
                 ),
               ),
             ),
-            ElevatedButton(
-              onPressed: () => _launchEditor(editor.Theme.light),
-              child: const Text('System theme editor'),
-            ),
-            ElevatedButton(
-              onPressed: () => _launchEditor(editor.Theme.light),
-              child: const Text('Light theme editor'),
-            ),
-            ElevatedButton(
-              onPressed: () => _launchEditor(editor.Theme.dark),
-              child: const Text('Dark theme editor'),
-            ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => _launchEditor(AztecEditorTheme.system),
+                    child: const Text('System'),
+                  ),
+                ),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => _launchEditor(AztecEditorTheme.light),
+                    child: const Text('Light'),
+                  ),
+                ),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => _launchEditor(AztecEditorTheme.dark),
+                    child: const Text('Dark'),
+                  ),
+                ),
+              ],
+            )
           ],
         ),
       ),
     );
+  }
+
+  @override
+  Future<String?> onFileSelected(String editorToken, String filePath) async {
+    await Future.delayed(const Duration(seconds: 5));
+    // return 'https://picsum.photos/id/237/200/300';
+    return null;
   }
 }

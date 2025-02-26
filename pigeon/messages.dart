@@ -26,7 +26,7 @@ import 'package:pigeon/pigeon.dart';
     // objcOptions: ObjcOptions(prefix: 'ZAE'),
   ),
 )
-enum ToolbarOptions {
+enum AztecToolbarOption {
   // Text Styling
   BOLD,
   ITALIC,
@@ -63,23 +63,23 @@ enum ToolbarOptions {
   VIDEO,
 }
 
-enum Theme {
+enum AztecEditorTheme {
   light,
   dark,
   system,
 }
 
-class EditorConfig {
+class AztecEditorConfig {
   final String? primaryColor;
   final String? backgroundColor;
   final String? textColor;
   final String? placeholder;
   final List<String>? fileExtensions;
-  final List<ToolbarOptions>? toolbarOptions;
+  final List<AztecToolbarOption>? toolbarOptions;
   final String title;
-  final Theme theme;
+  final AztecEditorTheme theme;
 
-  EditorConfig({
+  AztecEditorConfig({
     required this.title,
     required this.primaryColor,
     required this.placeholder,
@@ -87,18 +87,18 @@ class EditorConfig {
     required this.textColor,
     required this.fileExtensions,
     required this.toolbarOptions,
-    this.theme = Theme.system,
+    this.theme = AztecEditorTheme.system,
   });
 }
 
 @HostApi()
 abstract class AztecEditorApi {
   @async
-  String? launch(String? initialHtml, {required EditorConfig config});
+  String? launch({String? initialHtml, required String editorToken, required AztecEditorConfig config});
 }
 
 @FlutterApi()
 abstract class AztecFlutterApi {
   @async
-  String onFileSelected(String filePath);
+  String? onFileSelected(String editorToken, String filePath);
 }

@@ -3,8 +3,10 @@ package com.zebradevs.aztec.editor
 import android.app.Activity
 import android.content.Intent
 import com.zebradevs.aztec.AztecEditorApi
-import com.zebradevs.aztec.EditorConfig
-import com.zebradevs.aztec.ToolbarOptions
+import com.zebradevs.aztec.AztecEditorConfig
+import com.zebradevs.aztec.AztecFlutterApi
+import com.zebradevs.aztec.AztecToolbarOption
+import com.zebradevs.aztec.messages.AztecFlutterContainer
 import com.zebradevs.aztec.utils.runOnUi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -18,6 +20,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     private var activity: Activity? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        AztecFlutterContainer.flutterApi = AztecFlutterApi(flutterPluginBinding.binaryMessenger)
         AztecEditorApi.setUp(
             binaryMessenger = flutterPluginBinding.binaryMessenger,
             api = this
@@ -25,6 +28,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        AztecFlutterContainer.flutterApi = null
         AztecEditorApi.setUp(
             binaryMessenger = binding.binaryMessenger,
             api = null
@@ -65,18 +69,20 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
         return false
     }
 
+
     override fun launch(
         initialHtml: String?,
-        config: EditorConfig,
+        editorToken: String,
+        config: AztecEditorConfig,
         callback: (Result<String?>) -> Unit
     ) {
         runOnUi {
             activity?.let { activity ->
                 pendingResult = callback
 
-                var toolbarOptions = config.toolbarOptions ?: ToolbarOptions.entries
+                var toolbarOptions = config.toolbarOptions ?: AztecToolbarOption.entries
                 if (toolbarOptions.isEmpty()) {
-                    toolbarOptions = ToolbarOptions.entries
+                    toolbarOptions = AztecToolbarOption.entries
                 }
 
                 val intent = AztecEditorActivity.createIntent(
@@ -85,7 +91,8 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
                     placeholder = config.placeholder,
                     initialHtml = initialHtml,
                     theme = config.theme.toString(),
-                    toolbarOptions = toolbarOptions
+                    toolbarOptions = toolbarOptions,
+                    editorToken = editorToken,
                 )
 
                 activity.startActivityForResult(

@@ -25,7 +25,7 @@ List<Object?> wrapResponse({Object? result, PlatformException? error, bool empty
   return <Object?>[error.code, error.message, error.details];
 }
 
-enum ToolbarOptions {
+enum AztecToolbarOption {
   BOLD,
   ITALIC,
   UNDERLINE,
@@ -49,14 +49,14 @@ enum ToolbarOptions {
   VIDEO,
 }
 
-enum Theme {
+enum AztecEditorTheme {
   light,
   dark,
   system,
 }
 
-class EditorConfig {
-  EditorConfig({
+class AztecEditorConfig {
+  AztecEditorConfig({
     this.primaryColor,
     this.backgroundColor,
     this.textColor,
@@ -77,11 +77,11 @@ class EditorConfig {
 
   List<String>? fileExtensions;
 
-  List<ToolbarOptions>? toolbarOptions;
+  List<AztecToolbarOption>? toolbarOptions;
 
   String title;
 
-  Theme theme;
+  AztecEditorTheme theme;
 
   Object encode() {
     return <Object?>[
@@ -96,17 +96,17 @@ class EditorConfig {
     ];
   }
 
-  static EditorConfig decode(Object result) {
+  static AztecEditorConfig decode(Object result) {
     result as List<Object?>;
-    return EditorConfig(
+    return AztecEditorConfig(
       primaryColor: result[0] as String?,
       backgroundColor: result[1] as String?,
       textColor: result[2] as String?,
       placeholder: result[3] as String?,
       fileExtensions: (result[4] as List<Object?>?)?.cast<String>(),
-      toolbarOptions: (result[5] as List<Object?>?)?.cast<ToolbarOptions>(),
+      toolbarOptions: (result[5] as List<Object?>?)?.cast<AztecToolbarOption>(),
       title: result[6]! as String,
-      theme: result[7]! as Theme,
+      theme: result[7]! as AztecEditorTheme,
     );
   }
 }
@@ -119,13 +119,13 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    }    else if (value is ToolbarOptions) {
+    }    else if (value is AztecToolbarOption) {
       buffer.putUint8(129);
       writeValue(buffer, value.index);
-    }    else if (value is Theme) {
+    }    else if (value is AztecEditorTheme) {
       buffer.putUint8(130);
       writeValue(buffer, value.index);
-    }    else if (value is EditorConfig) {
+    }    else if (value is AztecEditorConfig) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
     } else {
@@ -138,12 +138,12 @@ class _PigeonCodec extends StandardMessageCodec {
     switch (type) {
       case 129: 
         final int? value = readValue(buffer) as int?;
-        return value == null ? null : ToolbarOptions.values[value];
+        return value == null ? null : AztecToolbarOption.values[value];
       case 130: 
         final int? value = readValue(buffer) as int?;
-        return value == null ? null : Theme.values[value];
+        return value == null ? null : AztecEditorTheme.values[value];
       case 131: 
-        return EditorConfig.decode(readValue(buffer)!);
+        return AztecEditorConfig.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -163,14 +163,14 @@ class AztecEditorApi {
 
   final String pigeonVar_messageChannelSuffix;
 
-  Future<String?> launch(String? initialHtml, {required EditorConfig config}) async {
+  Future<String?> launch({String? initialHtml, required String editorToken, required AztecEditorConfig config, }) async {
     final String pigeonVar_channelName = 'dev.flutter.pigeon.zeta_aztec_editor.AztecEditorApi.launch$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[initialHtml, config]);
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[initialHtml, editorToken, config]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -190,7 +190,7 @@ class AztecEditorApi {
 abstract class AztecFlutterApi {
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
 
-  Future<String> onFileSelected(String filePath);
+  Future<String?> onFileSelected(String editorToken, String filePath);
 
   static void setUp(AztecFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
     messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
@@ -205,11 +205,14 @@ abstract class AztecFlutterApi {
           assert(message != null,
           'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected was null.');
           final List<Object?> args = (message as List<Object?>?)!;
-          final String? arg_filePath = (args[0] as String?);
+          final String? arg_editorToken = (args[0] as String?);
+          assert(arg_editorToken != null,
+              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected was null, expected non-null String.');
+          final String? arg_filePath = (args[1] as String?);
           assert(arg_filePath != null,
               'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected was null, expected non-null String.');
           try {
-            final String output = await api.onFileSelected(arg_filePath!);
+            final String? output = await api.onFileSelected(arg_editorToken!, arg_filePath!);
             return wrapResponse(result: output);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);

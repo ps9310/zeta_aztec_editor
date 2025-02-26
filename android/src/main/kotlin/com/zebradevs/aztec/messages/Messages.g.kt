@@ -49,7 +49,7 @@ class FlutterError (
   val details: Any? = null
 ) : Throwable()
 
-enum class ToolbarOptions(val raw: Int) {
+enum class AztecToolbarOption(val raw: Int) {
   BOLD(0),
   ITALIC(1),
   UNDERLINE(2),
@@ -73,47 +73,47 @@ enum class ToolbarOptions(val raw: Int) {
   VIDEO(20);
 
   companion object {
-    fun ofRaw(raw: Int): ToolbarOptions? {
+    fun ofRaw(raw: Int): AztecToolbarOption? {
       return values().firstOrNull { it.raw == raw }
     }
   }
 }
 
-enum class Theme(val raw: Int) {
+enum class AztecEditorTheme(val raw: Int) {
   LIGHT(0),
   DARK(1),
   SYSTEM(2);
 
   companion object {
-    fun ofRaw(raw: Int): Theme? {
+    fun ofRaw(raw: Int): AztecEditorTheme? {
       return values().firstOrNull { it.raw == raw }
     }
   }
 }
 
 /** Generated class from Pigeon that represents data sent in messages. */
-data class EditorConfig (
+data class AztecEditorConfig (
   val primaryColor: String? = null,
   val backgroundColor: String? = null,
   val textColor: String? = null,
   val placeholder: String? = null,
   val fileExtensions: List<String>? = null,
-  val toolbarOptions: List<ToolbarOptions>? = null,
+  val toolbarOptions: List<AztecToolbarOption>? = null,
   val title: String,
-  val theme: Theme
+  val theme: AztecEditorTheme
 )
  {
   companion object {
-    fun fromList(pigeonVar_list: List<Any?>): EditorConfig {
+    fun fromList(pigeonVar_list: List<Any?>): AztecEditorConfig {
       val primaryColor = pigeonVar_list[0] as String?
       val backgroundColor = pigeonVar_list[1] as String?
       val textColor = pigeonVar_list[2] as String?
       val placeholder = pigeonVar_list[3] as String?
       val fileExtensions = pigeonVar_list[4] as List<String>?
-      val toolbarOptions = pigeonVar_list[5] as List<ToolbarOptions>?
+      val toolbarOptions = pigeonVar_list[5] as List<AztecToolbarOption>?
       val title = pigeonVar_list[6] as String
-      val theme = pigeonVar_list[7] as Theme
-      return EditorConfig(primaryColor, backgroundColor, textColor, placeholder, fileExtensions, toolbarOptions, title, theme)
+      val theme = pigeonVar_list[7] as AztecEditorTheme
+      return AztecEditorConfig(primaryColor, backgroundColor, textColor, placeholder, fileExtensions, toolbarOptions, title, theme)
     }
   }
   fun toList(): List<Any?> {
@@ -134,17 +134,17 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
     return when (type) {
       129.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          ToolbarOptions.ofRaw(it.toInt())
+          AztecToolbarOption.ofRaw(it.toInt())
         }
       }
       130.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          Theme.ofRaw(it.toInt())
+          AztecEditorTheme.ofRaw(it.toInt())
         }
       }
       131.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          EditorConfig.fromList(it)
+          AztecEditorConfig.fromList(it)
         }
       }
       else -> super.readValueOfType(type, buffer)
@@ -152,15 +152,15 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
-      is ToolbarOptions -> {
+      is AztecToolbarOption -> {
         stream.write(129)
         writeValue(stream, value.raw)
       }
-      is Theme -> {
+      is AztecEditorTheme -> {
         stream.write(130)
         writeValue(stream, value.raw)
       }
-      is EditorConfig -> {
+      is AztecEditorConfig -> {
         stream.write(131)
         writeValue(stream, value.toList())
       }
@@ -172,7 +172,7 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
 
 /** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface AztecEditorApi {
-  fun launch(initialHtml: String?, config: EditorConfig, callback: (Result<String?>) -> Unit)
+  fun launch(initialHtml: String?, editorToken: String, config: AztecEditorConfig, callback: (Result<String?>) -> Unit)
 
   companion object {
     /** The codec used by AztecEditorApi. */
@@ -189,8 +189,9 @@ interface AztecEditorApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val initialHtmlArg = args[0] as String?
-            val configArg = args[1] as EditorConfig
-            api.launch(initialHtmlArg, configArg) { result: Result<String?> ->
+            val editorTokenArg = args[1] as String
+            val configArg = args[2] as AztecEditorConfig
+            api.launch(initialHtmlArg, editorTokenArg, configArg) { result: Result<String?> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(wrapError(error))
@@ -215,19 +216,17 @@ class AztecFlutterApi(private val binaryMessenger: BinaryMessenger, private val 
       MessagesPigeonCodec()
     }
   }
-  fun onFileSelected(filePathArg: String, callback: (Result<String>) -> Unit)
+  fun onFileSelected(editorTokenArg: String, filePathArg: String, callback: (Result<String?>) -> Unit)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
     val channelName = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
-    channel.send(listOf(filePathArg)) {
+    channel.send(listOf(editorTokenArg, filePathArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
-        } else if (it[0] == null) {
-          callback(Result.failure(FlutterError("null-error", "Flutter api returned null value for non-null return value.", "")))
         } else {
-          val output = it[0] as String
+          val output = it[0] as String?
           callback(Result.success(output))
         }
       } else {
