@@ -71,6 +71,7 @@ import org.wordpress.aztec.toolbar.ToolbarAction
 import org.wordpress.aztec.toolbar.ToolbarItems
 import org.xml.sax.Attributes
 import java.io.File
+import java.io.FileOutputStream
 import java.util.Locale
 import java.util.Random
 
@@ -436,22 +437,63 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun handleCameraPhotoResult() {
-        val options = BitmapFactory.Options().apply { inDensity = DisplayMetrics.DENSITY_DEFAULT }
-        val bitmap = BitmapFactory.decodeFile(mediaPath, options)
-        insertImageAndSimulateUpload(bitmap, mediaPath)
+        // For camera photo, mediaPath is already set to the external file path.
+        val sourceFile = File(mediaPath)
+        if (sourceFile.exists()) {
+            // Create a new file name for internal storage.
+            val newFileName = "IMG_${System.currentTimeMillis()}.jpg"
+            val destinationFile = File(filesDir, newFileName)
+            try {
+                sourceFile.inputStream().use { input ->
+                    destinationFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                // Update mediaPath to point to the file in internal storage.
+                mediaPath = destinationFile.absolutePath
+                val options =
+                    BitmapFactory.Options().apply { inDensity = DisplayMetrics.DENSITY_DEFAULT }
+                val bitmap = BitmapFactory.decodeFile(mediaPath, options)
+                insertImageAndSimulateUpload(bitmap, mediaPath)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ToastUtils.showToast(this, "Failed to copy image to internal storage!")
+            }
+        }
     }
 
     private fun handleGalleryPhotoResult(data: Intent?) {
-        mediaPath = data?.data.toString()
-        val stream = contentResolver.openInputStream(Uri.parse(mediaPath))
-        val options = BitmapFactory.Options().apply { inDensity = DisplayMetrics.DENSITY_DEFAULT }
-        val bitmap = BitmapFactory.decodeStream(stream, null, options)
-        insertImageAndSimulateUpload(bitmap, mediaPath)
+        data?.data?.let { uri ->
+            // Copy the file to internal storage.
+            val newFileName = "IMG_${System.currentTimeMillis()}.jpg"
+            val internalPath = copyFileToInternalStorage(uri, newFileName)
+            if (internalPath != null) {
+                mediaPath = internalPath
+                // Instead of using contentResolver, open via FileInputStream.
+                val file = File(mediaPath)
+                if (file.exists()) {
+                    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                    insertImageAndSimulateUpload(bitmap, mediaPath)
+                } else {
+                    ToastUtils.showToast(this, "File not found in internal storage!")
+                }
+            } else {
+                ToastUtils.showToast(this, "Failed to copy image to internal storage!")
+            }
+        }
     }
 
     private fun handleVideoResult(data: Intent?) {
-        mediaPath = data?.data.toString()
-        createVideoThumbnailAndUpload()
+        data?.data?.let { uri ->
+            val newFileName = "VID_${System.currentTimeMillis()}.mp4"
+            val internalPath = copyFileToInternalStorage(uri, newFileName)
+            if (internalPath != null) {
+                mediaPath = internalPath
+                createVideoThumbnailAndUpload()
+            } else {
+                ToastUtils.showToast(this, "Failed to copy video to internal storage!")
+            }
+        }
     }
 
     private fun createVideoThumbnailAndUpload() {
@@ -576,12 +618,12 @@ class AztecEditorActivity : AppCompatActivity(),
         ) {
             val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                mediaFile = "wp-" + System.currentTimeMillis()
+                mediaFile = "IMG_" + System.currentTimeMillis()
                 mediaPath = File.createTempFile(
                     mediaFile, ".jpg", getExternalFilesDir(Environment.DIRECTORY_PICTURES)
                 ).absolutePath
             } else {
-                mediaFile = "wp-" + System.currentTimeMillis() + ".jpg"
+                mediaFile = "IMG_" + System.currentTimeMillis() + ".jpg"
                 mediaPath =
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
                         .toString() + File.separator + "Camera" + File.separator + mediaFile
@@ -944,6 +986,29 @@ class AztecEditorActivity : AppCompatActivity(),
                 it.show()
                 mediaProgressDialog = it
             }
+    }
+
+    private fun copyFileToInternalStorage(sourceUri: Uri, newFileName: String): String? {
+        return try {
+            // Open the source input stream
+            val inputStream = contentResolver.openInputStream(sourceUri) ?: return null
+
+            // Create a file in internal storage
+            val outputFile = File(filesDir, newFileName)
+            val outputStream = FileOutputStream(outputFile)
+
+            // Copy the contents from the source to the destination
+            inputStream.copyTo(outputStream)
+
+            inputStream.close()
+            outputStream.close()
+
+            // Return the absolute path of the copied file
+            outputFile.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
     // endregion
 }
