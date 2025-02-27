@@ -14,14 +14,22 @@ public class ZetaAztecEditorPlugin: NSObject, FlutterPlugin, AztecEditorApi {
         config: AztecEditorConfig,
         completion: @escaping (Result<String?, any Error>) -> Void
     ) {
-        completion(.success((initialHtml ?? "") + "\n\nThis is added from the native code."))
+        let controller = EditorDemoController(
+            initialHtml: initialHtml,
+            editorToken: editorToken,
+            config: config,
+            completion: completion
+        )
+        
+        let navController = UINavigationController(rootViewController: controller)
+        navController.modalPresentationStyle = .fullScreen
         
         
-        
-        let controller = EditorDemoController(withSampleHTML: initialHtml, wordPressMode: true)
-        
-        UIApplication.shared.windows.first?.rootViewController?.present(controller, animated: true)
-        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let keyWindow = windowScene.windows.first(where: { $0.isKeyWindow }) {
+            keyWindow.rootViewController?.present(navController, animated: true, completion: nil)
+        } else {
+            completion(.failure(NSError(domain: "ZetaAztecEditorPlugin", code: 1, userInfo: nil)))
+        }
     }
-    
 }

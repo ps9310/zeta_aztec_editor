@@ -17,11 +17,17 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
   String _html = '''
-  <h3>Heading</h3>
-  <p>
-    A paragraph with <strong>strong</strong>, <em>emphasized</em>
-    and <span style="color: red">colored</span> text.
-  </p>
+<h3>Heading</h3>
+<p>A paragraph with <strong>strong</strong>, <em>emphasized</em> text.
+  <ul>
+    <li>One</li>
+    <li>Two</li>
+    <li>Three</li>
+    <li>Four</li>
+  </ul>
+</p>
+<p>This is now very important to get your attention on this topic</p>
+<p></p>
   ''';
 
   @override
@@ -68,27 +74,29 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
                 ),
               ),
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => _launchEditor(AztecEditorTheme.system),
-                    child: const Text('System'),
+            SafeArea(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => _launchEditor(AztecEditorTheme.system),
+                      child: const Text('System'),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => _launchEditor(AztecEditorTheme.light),
-                    child: const Text('Light'),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => _launchEditor(AztecEditorTheme.light),
+                      child: const Text('Light'),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => _launchEditor(AztecEditorTheme.dark),
-                    child: const Text('Dark'),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => _launchEditor(AztecEditorTheme.dark),
+                      child: const Text('Dark'),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             )
           ],
         ),
