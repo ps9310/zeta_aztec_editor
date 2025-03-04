@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first, constant_identifier_names
 import 'package:pigeon/pigeon.dart';
 
 @ConfigurePigeon(
@@ -27,40 +26,19 @@ import 'package:pigeon/pigeon.dart';
   ),
 )
 enum AztecToolbarOption {
-  // Text Styling
-  BOLD,
-  ITALIC,
-  UNDERLINE,
-  STRIKETHROUGH,
-
-  // Headings & Block Styles
-  HEADING,
-
-  // Lists & Related Controls
-  LIST,
-  UNORDERED_LIST,
-  ORDERED_LIST,
-  TASK_LIST,
-
-  // Indentation & Alignment
-  INDENT,
-  OUTDENT,
-  ALIGN_LEFT,
-  ALIGN_CENTER,
-  ALIGN_RIGHT,
-
-  // Additional Formatting
-  QUOTE,
-  LINK,
-
-  // Code & Preformatted Text
-  CODE,
-  PREFORMAT,
-
-  // Media & Dividers
-  HORIZONTAL_RULE,
-  IMAGE,
-  VIDEO,
+  heading,
+  bold,
+  italic,
+  underline,
+  strikethrough,
+  unorderedList,
+  orderedList,
+  quote,
+  link,
+  code,
+  horizontalRule,
+  image,
+  video,
 }
 
 enum AztecEditorTheme {
@@ -78,15 +56,17 @@ class AztecEditorConfig {
   final List<AztecToolbarOption>? toolbarOptions;
   final String title;
   final AztecEditorTheme theme;
+  final Map<String, String>? authHeaders;
 
   AztecEditorConfig({
     required this.title,
-    required this.primaryColor,
-    required this.placeholder,
-    required this.backgroundColor,
-    required this.textColor,
-    required this.fileExtensions,
-    required this.toolbarOptions,
+    this.primaryColor,
+    this.placeholder,
+    this.backgroundColor,
+    this.textColor,
+    this.fileExtensions,
+    this.toolbarOptions,
+    this.authHeaders,
     this.theme = AztecEditorTheme.system,
   });
 }

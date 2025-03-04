@@ -17,17 +17,17 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
   String _html = '''
-<h3>Heading</h3>
-<p>A paragraph with <strong>strong</strong>, <em>emphasized</em> text.
-  <ul>
-    <li>One</li>
-    <li>Two</li>
-    <li>Three</li>
-    <li>Four</li>
-  </ul>
-</p>
+  <h3>Heading</h3>
+<p>A paragraph with <strong>strong</strong>, <em>emphasized</em> text. </p>
+<ul>
+  <li>One</li>
+  <li>Two</li>
+  <li>Three</li>
+  <li>Four</li>
+</ul>
 <p>This is now very important to get your attention on this topic</p>
-<p></p>
+<p><img src="https://picsum.photos/id/237/900/1200" class="alignnone size-full"></p>
+<p><video src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"></video></p>
   ''';
 
   @override
@@ -42,9 +42,7 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
       placeholder: 'Hint from flutter...',
       theme: theme,
       title: 'Add Instructions',
-      toolbarOptions: [
-        ...AztecToolbarOption.values,
-      ]..remove(AztecToolbarOption.LIST),
+      toolbarOptions: AztecToolbarOption.values,
     );
 
     ZetaAztecEditor().launch(initialHtml: _html, config: config, callback: this).then((value) {
@@ -107,7 +105,7 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
   @override
   Future<String?> onAztecFileSelected(String filePath) async {
     await Future.delayed(const Duration(seconds: 1));
-    return 'https://picsum.photos/id/237/200/300'; // upload success
+    return 'https://picsum.photos/id/237/900/1200'; // upload success
     // return null; // upload failed
   }
 

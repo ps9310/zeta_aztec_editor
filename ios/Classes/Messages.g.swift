@@ -69,27 +69,19 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
 }
 
 enum AztecToolbarOption: Int {
-  case bOLD = 0
-  case iTALIC = 1
-  case uNDERLINE = 2
-  case sTRIKETHROUGH = 3
-  case hEADING = 4
-  case lIST = 5
-  case uNORDEREDLIST = 6
-  case oRDEREDLIST = 7
-  case tASKLIST = 8
-  case iNDENT = 9
-  case oUTDENT = 10
-  case aLIGNLEFT = 11
-  case aLIGNCENTER = 12
-  case aLIGNRIGHT = 13
-  case qUOTE = 14
-  case lINK = 15
-  case cODE = 16
-  case pREFORMAT = 17
-  case hORIZONTALRULE = 18
-  case iMAGE = 19
-  case vIDEO = 20
+  case heading = 0
+  case bold = 1
+  case italic = 2
+  case underline = 3
+  case strikethrough = 4
+  case unorderedList = 5
+  case orderedList = 6
+  case quote = 7
+  case link = 8
+  case code = 9
+  case horizontalRule = 10
+  case image = 11
+  case video = 12
 }
 
 enum AztecEditorTheme: Int {
@@ -108,6 +100,7 @@ struct AztecEditorConfig {
   var toolbarOptions: [AztecToolbarOption]? = nil
   var title: String
   var theme: AztecEditorTheme
+  var authHeaders: [String: String]? = nil
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -120,6 +113,7 @@ struct AztecEditorConfig {
     let toolbarOptions: [AztecToolbarOption]? = nilOrValue(pigeonVar_list[5])
     let title = pigeonVar_list[6] as! String
     let theme = pigeonVar_list[7] as! AztecEditorTheme
+    let authHeaders: [String: String]? = nilOrValue(pigeonVar_list[8])
 
     return AztecEditorConfig(
       primaryColor: primaryColor,
@@ -129,7 +123,8 @@ struct AztecEditorConfig {
       fileExtensions: fileExtensions,
       toolbarOptions: toolbarOptions,
       title: title,
-      theme: theme
+      theme: theme,
+      authHeaders: authHeaders
     )
   }
   func toList() -> [Any?] {
@@ -142,6 +137,7 @@ struct AztecEditorConfig {
       toolbarOptions,
       title,
       theme,
+      authHeaders,
     ]
   }
 }

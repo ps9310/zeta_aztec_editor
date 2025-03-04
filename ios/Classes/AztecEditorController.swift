@@ -9,7 +9,7 @@ enum EditorDemoControllerError : Error {
     case cancelled
 }
 
-class EditorDemoController: UIViewController {
+class AztecEditorController: UIViewController {
     
     fileprivate(set) lazy var formatBar: Aztec.FormatBar = {
         return self.createToolbar()
@@ -24,11 +24,29 @@ class EditorDemoController: UIViewController {
     }
     
     fileprivate(set) lazy var mediaInserter: MediaInserter = {
-        return MediaInserter(textView: self.richTextView, attachmentTextAttributes: Constants.mediaMessageAttributes)
+        let inserter = MediaInserter(
+            textView: self.richTextView,
+            attachmentTextAttributes: Constants.mediaMessageAttributes
+        )
+        
+        inserter.uploadCallback = { fileURL, completion in
+            // Call your onFileSelected function with the editor token and file path.
+            AztecFlutterContainer.shared.flutterApi?
+                .onFileSelected(editorToken: self.editorToken, filePath: fileURL.path) { result in
+                // When the upload finishes, invoke the completion closure.
+                completion(result)
+            }
+        }
+        
+        return inserter
     }()
     
     fileprivate(set) lazy var textViewAttachmentDelegate: TextViewAttachmentDelegate = {
-        return TextViewAttachmentDelegateProvider(baseController: self, attachmentTextAttributes: Constants.mediaMessageAttributes)
+        return TextViewAttachmentDelegateProvider(
+            baseController: self,
+            attachmentTextAttributes: Constants.mediaMessageAttributes,
+            authHeaders: self.config.authHeaders
+        )
     }()
     
     fileprivate(set) lazy var editorView: Aztec.EditorView = {
@@ -41,7 +59,9 @@ class EditorDemoController: UIViewController {
             defaultMissingImage: Constants.defaultMissingImage
         )
         
+        
         editorView.clipsToBounds = false
+        
         setupHTMLTextView(editorView.htmlTextView)
         setupRichTextView(editorView.richTextView)
         
@@ -142,7 +162,7 @@ class EditorDemoController: UIViewController {
         
         // 4) Redo button with image + optional text
         let doneButton = UIBarButtonItem(
-            title: "Done",
+            title: "DONE",
             style: .done,
             target: self,
             action: #selector(doneAction)
@@ -206,13 +226,67 @@ class EditorDemoController: UIViewController {
     }
     
     @objc func doneAction() {
-        completion(.success(richTextView.getHTML(prettify: true)))
+        view.endEditing(true)
+        let html = correctUnorderedList(richTextView.getHTML())
+        print(html)
+        completion(.success(html))
         dismiss(animated: true)
     }
     
     @objc func backAction() {
+        view.endEditing(true)
         completion(.failure(EditorDemoControllerError.cancelled))
         dismiss(animated: true, completion: nil)
+    }
+    
+    func correctUnorderedList(_ html: String) -> String {
+        // Pattern to match any <ul>...</ul> block (including newlines)
+        let pattern = "<ul>(.*?)</ul>"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators]) else {
+            return html
+        }
+        
+        // Get all matches in the HTML string.
+        let nsRange = NSRange(html.startIndex..<html.endIndex, in: html)
+        let matches = regex.matches(in: html, options: [], range: nsRange)
+        
+        // Collect the ranges and inner text for those lists that do not contain any <li> tags.
+        var invalidMatches: [(range: NSRange, content: String)] = []
+        for match in matches {
+            if let innerRange = Range(match.range(at: 1), in: html) {
+                let innerText = String(html[innerRange])
+                if !innerText.contains("<li>") {
+                    invalidMatches.append((range: match.range, content: innerText))
+                }
+            }
+        }
+        
+        // If there are no invalid lists, return the original HTML.
+        if invalidMatches.isEmpty {
+            return html
+        }
+        
+        // Compute the combined range spanning from the first to the last invalid list.
+        let firstRange = invalidMatches.first!.range
+        let lastRange = invalidMatches.last!.range
+        let combinedRange = NSRange(location: firstRange.location,
+                                    length: (lastRange.location + lastRange.length) - firstRange.location)
+        
+        // Build the new valid list by wrapping each invalid list’s inner text in <li> tags.
+        var newList = "<ul>"
+        for item in invalidMatches {
+            let trimmed = item.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            newList += "<li>\(trimmed)</li>"
+        }
+        newList += "</ul>"
+        
+        // Replace the combined invalid range with the new valid list.
+        if let range = Range(combinedRange, in: html) {
+            let correctedHTML = html.replacingCharacters(in: range, with: newList)
+            return correctedHTML
+        }
+        
+        return html
     }
     
     // MARK: - Navigation Bar Theme Setup
@@ -432,7 +506,7 @@ class EditorDemoController: UIViewController {
     }
 }
 
-extension EditorDemoController : UITextViewDelegate {
+extension AztecEditorController : UITextViewDelegate {
     func textViewDidChangeSelection(_ textView: UITextView) {
         updateFormatBar()
         changeRichTextInputView(to: nil)
@@ -475,34 +549,15 @@ extension EditorDemoController : UITextViewDelegate {
     }
 }
 
-extension EditorDemoController : Aztec.TextViewFormattingDelegate {
+extension AztecEditorController : Aztec.TextViewFormattingDelegate {
     func textViewCommandToggledAStyle() {
         updateFormatBar()
     }
 }
 
-extension EditorDemoController : UITextFieldDelegate {
-}
-
-extension EditorDemoController {
-    enum EditMode {
-        case richText
-        case html
-        
-        mutating func toggle() {
-            switch self {
-                case .html:
-                    self = .richText
-                case .richText:
-                    self = .html
-            }
-        }
-    }
-}
-
 // MARK: - Format Bar Delegate
 
-extension EditorDemoController : Aztec.FormatBarDelegate {
+extension AztecEditorController : Aztec.FormatBarDelegate {
     func formatBarTouchesBegan(_ formatBar: FormatBar) {
     }
     
@@ -517,7 +572,7 @@ extension EditorDemoController : Aztec.FormatBarDelegate {
 }
 
 // MARK: - Format Bar Actions
-extension EditorDemoController {
+extension AztecEditorController {
     func handleAction(for barItem: FormatBarItem) {
         guard let identifier = barItem.identifier,
               let formattingIdentifier = FormattingIdentifier(rawValue: identifier) else {
@@ -539,8 +594,10 @@ extension EditorDemoController {
                 toggleStrikethrough()
             case .blockquote:
                 toggleBlockquote()
-            case .unorderedlist, .orderedlist:
-                toggleList(fromItem: barItem)
+            case .unorderedlist:
+                toggleUnorderedList()
+            case .orderedlist:
+                toggleOrderedList()
             case .link:
                 toggleLink()
             case .media:
@@ -586,6 +643,14 @@ extension EditorDemoController {
         richTextView.toggleCode(range: richTextView.selectedRange)
     }
     
+    @objc func toggleUnorderedList() {
+        richTextView.toggleUnorderedList(range: richTextView.selectedRange)
+    }
+    
+    @objc func toggleOrderedList() {
+        richTextView.toggleOrderedList(range: richTextView.selectedRange)
+    }
+    
     func insertHorizontalRuler() {
         richTextView.replaceWithHorizontalRuler(at: richTextView.selectedRange)
     }
@@ -618,50 +683,6 @@ extension EditorDemoController {
                 self?.optionsTablePresenter.dismiss()
             }
         )
-    }
-    
-    func toggleList(fromItem item: FormatBarItem) {
-        guard !optionsTablePresenter.isOnScreen() else {
-            optionsTablePresenter.dismiss()
-            return
-        }
-        
-        let options = Constants.lists.map { listType -> OptionsTableViewOption in
-            return OptionsTableViewOption(image: listType.iconImage, title: NSAttributedString(string: listType.description, attributes: [:]))
-        }
-        
-        var index: Int? = nil
-        if let listType = listTypeForSelectedText() {
-            index = Constants.lists.firstIndex(of: listType)
-        }
-        
-        let optionsTableViewController = OptionsTableViewController(options: options)
-        optionsTableViewController.cellDeselectedTintColor = .gray
-        
-        optionsTablePresenter.present(
-            optionsTableViewController,
-            fromBarItem: item,
-            selectedRowIndex: index,
-            onSelect: { [weak self] selected in
-                guard let range = self?.richTextView.selectedRange else { return }
-                let listType = Constants.lists[selected]
-                switch listType {
-                    case .unordered:
-                        self?.richTextView.toggleUnorderedList(range: range)
-                    case .ordered:
-                        self?.richTextView.toggleOrderedList(range: range)
-                }
-                self?.optionsTablePresenter.dismiss()
-            }
-        )
-    }
-    
-    @objc func toggleUnorderedList() {
-        richTextView.toggleUnorderedList(range: richTextView.selectedRange)
-    }
-    
-    @objc func toggleOrderedList() {
-        richTextView.toggleOrderedList(range: richTextView.selectedRange)
     }
     
     func changeRichTextInputView(to: UIView?) {
@@ -756,7 +777,7 @@ extension EditorDemoController {
             textField.keyboardType = .URL
             textField.textContentType = .URL
             textField.text = urlToUse?.absoluteString
-            textField.addTarget(self, action: #selector(EditorDemoController.alertTextFieldDidChange), for: .editingChanged)
+            textField.addTarget(self, action: #selector(AztecEditorController.alertTextFieldDidChange), for: .editingChanged)
             textField.accessibilityIdentifier = "linkModalURL"
         }
         
@@ -837,16 +858,57 @@ extension EditorDemoController {
     }
     
     @objc func showImagePicker() {
+        view.endEditing(true)
+        // Create an action sheet to let the user choose between camera and photo library.
+        let alert = UIAlertController(title: "Add Media", message: "Choose media from:", preferredStyle: .actionSheet)
+        
+        // Action for the camera.
+        let cameraAction = UIAlertAction(title: "Camera", style: .default) { _ in
+            self.showPicker(source: .camera)
+        }
+        
+        // Action for the photo library.
+        let libraryAction = UIAlertAction(title: "Photo Library", style: .default) { _ in
+            self.showPicker(source: .photoLibrary)
+        }
+        
+        // Cancel action.
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        
+        // Add actions to the alert.
+        alert.addAction(cameraAction)
+        alert.addAction(libraryAction)
+        alert.addAction(cancelAction)
+        
+        // Present the alert.
+        present(alert, animated: true, completion: nil)
+    }
+    
+    // Helper method to configure and present the UIImagePickerController.
+    func showPicker(source: UIImagePickerController.SourceType) {
+        // Verify that the selected source type is available.
+        guard UIImagePickerController.isSourceTypeAvailable(source) else {
+            print("\(source == .camera ? "Camera" : "Photo Library") is not available on this device.")
+            return
+        }
+        
         let picker = UIImagePickerController()
-        picker.sourceType = .photoLibrary
-        picker.mediaTypes = UIImagePickerController.availableMediaTypes(for: .photoLibrary) ?? []
+        picker.sourceType = source
+        // Use the available media types for the chosen source.
+        picker.mediaTypes = UIImagePickerController.availableMediaTypes(for: source) ?? []
         picker.delegate = self
-        picker.allowsEditing = false
+        picker.allowsEditing = true
         picker.navigationBar.isTranslucent = false
         picker.modalPresentationStyle = .currentContext
         
         present(picker, animated: true, completion: nil)
     }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        // Dismiss the picker if the user cancels.
+        picker.dismiss(animated: true, completion: nil)
+    }
+    
     
     func makeToolbarButton(identifier: FormattingIdentifier) -> FormatBarItem {
         let button = FormatBarItem(image: identifier.iconImage, identifier: identifier.rawValue)
@@ -856,34 +918,32 @@ extension EditorDemoController {
     }
     
     func createToolbar() -> Aztec.FormatBar {
-        let mediaItem = makeToolbarButton(identifier: .media)
-        let scrollableItems = scrollableItemsForToolbar
-        let overflowItems = overflowItemsForToolbar
         
-        let toolbar = Aztec.FormatBar()
-        
-        if #available(iOS 13.0, *) {
-            toolbar.backgroundColor = UIColor.systemGroupedBackground
-            toolbar.tintColor = UIColor.secondaryLabel
-            toolbar.highlightedTintColor = UIColor.systemBlue
-            toolbar.selectedTintColor = UIColor.systemBlue
-            toolbar.disabledTintColor = .systemGray4
-            toolbar.dividerTintColor = UIColor.separator
-        } else {
-            toolbar.tintColor = .gray
-            toolbar.highlightedTintColor = .blue
-            toolbar.selectedTintColor = view.tintColor
-            toolbar.disabledTintColor = .lightGray
-            toolbar.dividerTintColor = .gray
+        var toolbarOptions = Array(config.toolbarOptions ?? [])
+        toolbarOptions.removeAll { option in
+            option == .image || option == .video
         }
         
+        let scrollableItems =  toolbarOptions.map(aztecIdentifier(from:)).map(makeToolbarButton(identifier:))
+        
+        let toolbar = Aztec.FormatBar()
+        toolbar.backgroundColor = UIColor.systemGroupedBackground
+        toolbar.tintColor = UIColor.secondaryLabel
+        toolbar.highlightedTintColor = UIColor.systemBlue
+        toolbar.selectedTintColor = UIColor.systemBlue
+        toolbar.disabledTintColor = .systemGray4
+        toolbar.dividerTintColor = UIColor.separator
         toolbar.overflowToggleIcon = UIImage(systemName: "ellipsis")!
         toolbar.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 44.0)
-        toolbar.autoresizingMask = [.flexibleHeight]
         toolbar.formatter = self
+        toolbar.autoresizingMask = [.flexibleHeight]
         
-        toolbar.leadingItem = mediaItem
-        toolbar.setDefaultItems(scrollableItems, overflowItems: overflowItems)
+        if config.toolbarOptions?.contains(.image) ?? false || config.toolbarOptions?.contains(.video) ?? false {
+            let mediaItem = makeToolbarButton(identifier: .media)
+            toolbar.leadingItem = mediaItem
+        }
+        
+        toolbar.setDefaultItems(scrollableItems)
         
         toolbar.barItemHandler = { [weak self] item in
             self?.handleAction(for: item)
@@ -896,48 +956,29 @@ extension EditorDemoController {
         return toolbar
     }
     
-    var scrollableItemsForToolbar: [FormatBarItem] {
-        let headerButton = makeToolbarButton(identifier: .p)
-        var alternativeIcons = [String: UIImage]()
-        let headings = Constants.headers.suffix(from: 1)
-        for heading in headings {
-            alternativeIcons[heading.formattingIdentifier.rawValue] = heading.iconImage
+    func aztecIdentifier(from toolbarOption: AztecToolbarOption) -> FormattingIdentifier {
+        switch(toolbarOption) {
+            case .heading: return .p
+            case .bold: return .bold
+            case .italic: return .italic
+            case .underline: return .underline
+            case .strikethrough: return .strikethrough
+            case .unorderedList: return .unorderedlist
+            case .orderedList: return .orderedlist
+            case .quote : return .blockquote
+            case .link : return .link
+            case .code : return .code
+            case .horizontalRule : return .horizontalruler
+            case .image : return .media
+            case .video : return .media
         }
-        headerButton.alternativeIcons = alternativeIcons
-        
-        let listButton = makeToolbarButton(identifier: .unorderedlist)
-        var listIcons = [String: UIImage]()
-        for list in Constants.lists {
-            listIcons[list.formattingIdentifier.rawValue] = list.iconImage
-        }
-        listButton.alternativeIcons = listIcons
-        
-        return [
-            headerButton,
-            listButton,
-            makeToolbarButton(identifier: .blockquote),
-            makeToolbarButton(identifier: .bold),
-            makeToolbarButton(identifier: .italic),
-            makeToolbarButton(identifier: .link)
-        ]
-    }
-    
-    var overflowItemsForToolbar: [FormatBarItem] {
-        return [
-            makeToolbarButton(identifier: .underline),
-            makeToolbarButton(identifier: .strikethrough),
-            makeToolbarButton(identifier: .code),
-            makeToolbarButton(identifier: .horizontalruler),
-            makeToolbarButton(identifier: .more),
-            makeToolbarButton(identifier: .sourcecode)
-        ]
     }
 }
 
-extension EditorDemoController: UINavigationControllerDelegate {
+extension AztecEditorController: UINavigationControllerDelegate {
 }
 
-extension EditorDemoController: UIImagePickerControllerDelegate {
+extension AztecEditorController: UIImagePickerControllerDelegate {
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         dismiss(animated: true, completion: nil)
@@ -945,27 +986,35 @@ extension EditorDemoController: UIImagePickerControllerDelegate {
         guard let mediaType = info[convertFromUIImagePickerControllerInfoKey(UIImagePickerController.InfoKey.mediaType)] as? String else {
             return
         }
-        let typeImage = kUTTypeImage as String
-        let typeMovie = kUTTypeMovie as String
+        
+        let typeImage = UTType.image.identifier
+        let typeMovie = UTType.movie.identifier
         
         switch mediaType {
             case typeImage:
                 guard let image = info[convertFromUIImagePickerControllerInfoKey(UIImagePickerController.InfoKey.originalImage)] as? UIImage else {
                     return
                 }
-                mediaInserter.insertImage(image)
+                
+                picker.dismiss(animated: true) {
+                    self.mediaInserter.insertImage(image)
+                }
+                
             case typeMovie:
                 guard let videoURL = info[convertFromUIImagePickerControllerInfoKey(UIImagePickerController.InfoKey.mediaURL)] as? URL else {
                     return
                 }
-                mediaInserter.insertVideo(videoURL)
+                
+                picker.dismiss(animated: true) {
+                    self.mediaInserter.insertVideo(videoURL)
+                }
             default:
                 print("Media type not supported: \(mediaType)")
         }
     }
 }
 
-extension EditorDemoController {
+extension AztecEditorController {
     static var tintedMissingImage: UIImage = {
         if #available(iOS 13.0, *) {
             return UIImage(systemName: "photo")!.withTintColor(.label)
@@ -978,9 +1027,8 @@ extension EditorDemoController {
         static let defaultContentFont   = UIFont.systemFont(ofSize: 14)
         static let defaultHtmlFont      = UIFont.systemFont(ofSize: 24)
         static let defaultMissingImage  = tintedMissingImage
-        static let formatBarIconSize    = CGSize(width: 20.0, height: 20.0)
+        static let formatBarIconSize    = CGSize(width: 24.0, height: 24.0)
         static let headers              = [Header.HeaderType.none, .h1, .h2, .h3, .h4, .h5, .h6]
-        static let lists                = [TextList.Style.unordered, .ordered]
         static let moreAttachmentText   = "more"
         static let titleInsets          = UIEdgeInsets(top: 5, left: 0, bottom: 5, right: 0)
         static var mediaMessageAttributes: [NSAttributedString.Key: Any] {

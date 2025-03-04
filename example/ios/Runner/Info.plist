@@ -47,5 +47,9 @@
 	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Attach images in editor</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Attach videos in editor</string>
 </dict>
 </plist>

@@ -4,8 +4,8 @@ import UIKit
 public class ZetaAztecEditorPlugin: NSObject, FlutterPlugin, AztecEditorApi {
     
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let instance = ZetaAztecEditorPlugin()
-        AztecEditorApiSetup.setUp(binaryMessenger: registrar.messenger(), api: instance)
+        AztecEditorApiSetup.setUp(binaryMessenger: registrar.messenger(), api: ZetaAztecEditorPlugin())
+        AztecFlutterContainer.shared.flutterApi = AztecFlutterApi(binaryMessenger: registrar.messenger())
     }
     
     func launch(
@@ -14,7 +14,7 @@ public class ZetaAztecEditorPlugin: NSObject, FlutterPlugin, AztecEditorApi {
         config: AztecEditorConfig,
         completion: @escaping (Result<String?, any Error>) -> Void
     ) {
-        let controller = EditorDemoController(
+        let controller = AztecEditorController(
             initialHtml: initialHtml,
             editorToken: editorToken,
             config: config,

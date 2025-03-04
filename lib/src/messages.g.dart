@@ -26,27 +26,19 @@ List<Object?> wrapResponse({Object? result, PlatformException? error, bool empty
 }
 
 enum AztecToolbarOption {
-  BOLD,
-  ITALIC,
-  UNDERLINE,
-  STRIKETHROUGH,
-  HEADING,
-  LIST,
-  UNORDERED_LIST,
-  ORDERED_LIST,
-  TASK_LIST,
-  INDENT,
-  OUTDENT,
-  ALIGN_LEFT,
-  ALIGN_CENTER,
-  ALIGN_RIGHT,
-  QUOTE,
-  LINK,
-  CODE,
-  PREFORMAT,
-  HORIZONTAL_RULE,
-  IMAGE,
-  VIDEO,
+  heading,
+  bold,
+  italic,
+  underline,
+  strikethrough,
+  unorderedList,
+  orderedList,
+  quote,
+  link,
+  code,
+  horizontalRule,
+  image,
+  video,
 }
 
 enum AztecEditorTheme {
@@ -65,6 +57,7 @@ class AztecEditorConfig {
     this.toolbarOptions,
     required this.title,
     required this.theme,
+    this.authHeaders,
   });
 
   String? primaryColor;
@@ -83,6 +76,8 @@ class AztecEditorConfig {
 
   AztecEditorTheme theme;
 
+  Map<String, String>? authHeaders;
+
   Object encode() {
     return <Object?>[
       primaryColor,
@@ -93,6 +88,7 @@ class AztecEditorConfig {
       toolbarOptions,
       title,
       theme,
+      authHeaders,
     ];
   }
 
@@ -107,6 +103,7 @@ class AztecEditorConfig {
       toolbarOptions: (result[5] as List<Object?>?)?.cast<AztecToolbarOption>(),
       title: result[6]! as String,
       theme: result[7]! as AztecEditorTheme,
+      authHeaders: (result[8] as Map<Object?, Object?>?)?.cast<String, String>(),
     );
   }
 }

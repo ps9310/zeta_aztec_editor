@@ -50,27 +50,19 @@ class FlutterError (
 ) : Throwable()
 
 enum class AztecToolbarOption(val raw: Int) {
-  BOLD(0),
-  ITALIC(1),
-  UNDERLINE(2),
-  STRIKETHROUGH(3),
-  HEADING(4),
-  LIST(5),
-  UNORDERED_LIST(6),
-  ORDERED_LIST(7),
-  TASK_LIST(8),
-  INDENT(9),
-  OUTDENT(10),
-  ALIGN_LEFT(11),
-  ALIGN_CENTER(12),
-  ALIGN_RIGHT(13),
-  QUOTE(14),
-  LINK(15),
-  CODE(16),
-  PREFORMAT(17),
-  HORIZONTAL_RULE(18),
-  IMAGE(19),
-  VIDEO(20);
+  HEADING(0),
+  BOLD(1),
+  ITALIC(2),
+  UNDERLINE(3),
+  STRIKETHROUGH(4),
+  UNORDERED_LIST(5),
+  ORDERED_LIST(6),
+  QUOTE(7),
+  LINK(8),
+  CODE(9),
+  HORIZONTAL_RULE(10),
+  IMAGE(11),
+  VIDEO(12);
 
   companion object {
     fun ofRaw(raw: Int): AztecToolbarOption? {
@@ -100,7 +92,8 @@ data class AztecEditorConfig (
   val fileExtensions: List<String>? = null,
   val toolbarOptions: List<AztecToolbarOption>? = null,
   val title: String,
-  val theme: AztecEditorTheme
+  val theme: AztecEditorTheme,
+  val authHeaders: Map<String, String>? = null
 )
  {
   companion object {
@@ -113,7 +106,8 @@ data class AztecEditorConfig (
       val toolbarOptions = pigeonVar_list[5] as List<AztecToolbarOption>?
       val title = pigeonVar_list[6] as String
       val theme = pigeonVar_list[7] as AztecEditorTheme
-      return AztecEditorConfig(primaryColor, backgroundColor, textColor, placeholder, fileExtensions, toolbarOptions, title, theme)
+      val authHeaders = pigeonVar_list[8] as Map<String, String>?
+      return AztecEditorConfig(primaryColor, backgroundColor, textColor, placeholder, fileExtensions, toolbarOptions, title, theme, authHeaders)
     }
   }
   fun toList(): List<Any?> {
@@ -126,6 +120,7 @@ data class AztecEditorConfig (
       toolbarOptions,
       title,
       theme,
+      authHeaders,
     )
   }
 }
