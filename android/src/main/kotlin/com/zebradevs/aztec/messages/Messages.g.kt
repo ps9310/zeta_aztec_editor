@@ -69,7 +69,7 @@ enum class AztecToolbarOption(val raw: Int) {
 
     companion object {
         fun ofRaw(raw: Int): AztecToolbarOption? {
-            return values().firstOrNull { it.raw == raw }
+            return entries.firstOrNull { it.raw == raw }
         }
     }
 }
@@ -81,7 +81,7 @@ enum class AztecEditorTheme(val raw: Int) {
 
     companion object {
         fun ofRaw(raw: Int): AztecEditorTheme? {
-            return values().firstOrNull { it.raw == raw }
+            return entries.firstOrNull { it.raw == raw }
         }
     }
 }

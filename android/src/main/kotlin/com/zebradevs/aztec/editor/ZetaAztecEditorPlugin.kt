@@ -56,7 +56,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == AztecEditorActivity.REQUEST_CODE) {
             val result = if (resultCode == Activity.RESULT_OK) {
-                Result.success(data?.getStringExtra("html") ?: "")
+                Result.success(correctVideoTags(data?.getStringExtra("html") ?: ""))
             } else {
                 Result.failure(Exception("Editor was cancelled"))
             }
@@ -101,5 +101,10 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
                 )
             }
         }
+    }
+
+    private fun correctVideoTags(html: String): String {
+        if (html.isEmpty()) return html
+        return html.replace("""\[video src="([^"]+)"]""".toRegex(), """<video src="$1"></video>""")
     }
 }
