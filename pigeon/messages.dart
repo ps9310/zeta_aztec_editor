@@ -6,8 +6,8 @@ import 'package:pigeon/pigeon.dart';
     dartOut: 'lib/src/messages.g.dart',
     dartOptions: DartOptions(),
     // Kotlin for Android
-    kotlinOut: 'android/src/main/kotlin/com/zebradevs/aztec/messages/Messages.g.kt',
-    kotlinOptions: KotlinOptions(package: 'com.zebradevs.aztec'),
+    kotlinOut: 'android/src/main/kotlin/com/zebradevs/aztec/editor/Messages.g.kt',
+    kotlinOptions: KotlinOptions(package: 'com.zebradevs.aztec.editor'),
     // Swift for iOS
     swiftOut: 'ios/Classes/Messages.g.swift',
     swiftOptions: SwiftOptions(),

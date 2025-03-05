@@ -8,11 +8,11 @@ import org.wordpress.aztec.plugins.IMediaToolbarButton
 import org.wordpress.aztec.toolbar.AztecToolbar
 import org.wordpress.aztec.toolbar.IToolbarAction
 
-class MediaToolbarImageButton(val toolbar: AztecToolbar) : IMediaToolbarButton {
+class MediaToolbarVideoButton(private val toolbar: AztecToolbar) : IMediaToolbarButton {
 
     private var clickListener: IMediaToolbarButton.IMediaToolbarClickListener? = null
 
-    override val action: IToolbarAction = MediaToolbarAction.IMAGE
+    override val action: IToolbarAction = MediaToolbarAction.VIDEO
     override val context = toolbar.context!!
 
     override fun setMediaToolbarButtonClickListener(clickListener: IMediaToolbarButton.IMediaToolbarClickListener) {
@@ -28,7 +28,7 @@ class MediaToolbarImageButton(val toolbar: AztecToolbar) : IMediaToolbarButton {
     }
 
     override fun inflateButton(parent: ViewGroup) {
-        LayoutInflater.from(context).inflate(R.layout.media_toobar_camera_button, parent)
+        LayoutInflater.from(context).inflate(R.layout.media_toobar_gallery_button, parent)
     }
 
     override fun toolbarStateAboutToChange(toolbar: AztecToolbar, enable: Boolean) {

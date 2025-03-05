@@ -16,18 +16,23 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
+//   String _html = '''
+//   <h3>Heading</h3>
+// <p>A paragraph with <strong>strong</strong>, <em>emphasized</em> text. </p>
+// <ul>
+//   <li>One</li>
+//   <li>Two</li>
+//   <li>Three</li>
+//   <li>Four</li>
+// </ul>
+// <p>This is now very important to get your attention on this topic</p>
+// <p><img src="https://picsum.photos/id/237/900/1200" class="alignnone size-full"></p>
+// <p><video src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"></video></p>
+//   ''';
   String _html = '''
-  <h3>Heading</h3>
-<p>A paragraph with <strong>strong</strong>, <em>emphasized</em> text. </p>
-<ul>
-  <li>One</li>
-  <li>Two</li>
-  <li>Three</li>
-  <li>Four</li>
-</ul>
-<p>This is now very important to get your attention on this topic</p>
-<p><img src="https://picsum.photos/id/237/900/1200" class="alignnone size-full"></p>
-<p><video src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"></video></p>
+  <p>Hello there how was it going with the new house?<br/>
+  <img style=\"max-width: 100%;object-fit: contain\" src=\"https://zac-dev1.wfc.zebra.com/api/v3/media/64641ba9c804c934dd20c35431791f0266b7a57c\"/></p>
+  <video frameborder=\"0\" allowfullscreen=\"true\" src=\"https://zac-dev1.wfc.zebra.com/api/v3/media/ccfeeaf8df75677bed1cc3056f68a1032be2e153\"></video><p><br/></p>
   ''';
 
   @override
@@ -43,6 +48,9 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
       theme: theme,
       title: 'Add Instructions',
       toolbarOptions: AztecToolbarOption.values,
+      authHeaders: {
+        'Authorization': 'Platform nNvlM9_zuM2bfewtzb7y6jbpTLOl',
+      },
     );
 
     ZetaAztecEditor().launch(initialHtml: _html, config: config, callback: this).then((value) {

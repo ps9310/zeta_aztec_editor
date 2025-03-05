@@ -41,9 +41,8 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.content.IntentCompat
 import androidx.core.view.forEach
-import com.zebradevs.aztec.AztecToolbarOption
-import com.zebradevs.aztec.messages.AztecFlutterContainer
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.ImageUtils
 import org.wordpress.android.util.PermissionUtils
@@ -55,8 +54,6 @@ import org.wordpress.aztec.AztecText
 import org.wordpress.aztec.Html
 import org.wordpress.aztec.IHistoryListener
 import org.wordpress.aztec.ITextFormat
-import org.wordpress.aztec.glideloader.GlideImageLoader
-import org.wordpress.aztec.glideloader.GlideVideoThumbnailLoader
 import org.wordpress.aztec.plugins.CssUnderlinePlugin
 import org.wordpress.aztec.plugins.IMediaToolbarButton
 import org.wordpress.aztec.plugins.shortcodes.AudioShortcodePlugin
@@ -74,7 +71,6 @@ import org.wordpress.aztec.toolbar.ToolbarItems
 import org.xml.sax.Attributes
 import java.io.File
 import java.io.FileOutputStream
-import java.util.Locale
 import java.util.Random
 
 
@@ -98,27 +94,17 @@ class AztecEditorActivity : AppCompatActivity(),
         private const val MEDIA_CAMERA_VIDEO_PERMISSION_REQUEST_CODE = 1002
         private const val MEDIA_PHOTOS_PERMISSION_REQUEST_CODE = 1003
         private const val MEDIA_VIDEOS_PERMISSION_REQUEST_CODE = 1004
-        private const val REQUEST_MEDIA_CAMERA_PHOTO = 2001
-        private const val REQUEST_MEDIA_CAMERA_VIDEO = 2002
-        private const val REQUEST_MEDIA_PHOTO = 2003
-        private const val REQUEST_MEDIA_VIDEO = 2004
 
         fun createIntent(
             activity: Activity,
-            title: String,
-            editorToken: String,
-            placeholder: String?,
             initialHtml: String?,
-            theme: String?,
-            toolbarOptions: List<AztecToolbarOption>
+            editorToken: String,
+            editorConfig: EditorConfig
         ): Intent {
             return Intent(activity, AztecEditorActivity::class.java).apply {
-                putExtra("title", title)
-                putExtra("editorToken", editorToken)
-                putExtra("placeholder", placeholder)
                 putExtra("initialHtml", initialHtml)
-                putExtra("theme", theme)
-                putIntegerArrayListExtra("toolbarOptions", ArrayList(toolbarOptions.map { it.raw }))
+                putExtra("editorToken", editorToken)
+                putExtra("editorConfig", editorConfig)
             }
         }
     }
@@ -141,6 +127,8 @@ class AztecEditorActivity : AppCompatActivity(),
     private lateinit var videoOptionLauncher: ActivityResultLauncher<Intent>
     private lateinit var imageCaptureLauncher: ActivityResultLauncher<Intent>
     private lateinit var imageSelectLauncher: ActivityResultLauncher<Intent>
+
+    private var editorConfig: EditorConfig? = null
     // endregion
 
     // region Lifecycle & Setup
@@ -148,6 +136,10 @@ class AztecEditorActivity : AppCompatActivity(),
         setupThemeAndToolbar()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_aztec_editor)
+
+        IntentCompat.getParcelableExtra(intent, "editorConfig", EditorConfig::class.java)?.let {
+            editorConfig = it
+        }
 
         setupBackPressHandler()
         setupEditorConfiguration()
@@ -222,14 +214,14 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun setupThemeAndToolbar() {
-        val themeParam = intent.getStringExtra("theme") ?: "system"
-        when (themeParam.lowercase(Locale.getDefault())) {
-            "dark" -> {
+        val themeParam = editorConfig?.theme ?: AztecEditorTheme.SYSTEM
+        when (themeParam) {
+            AztecEditorTheme.DARK -> {
                 setTheme(R.style.EditorDarkTheme)
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
             }
 
-            "light" -> {
+            AztecEditorTheme.LIGHT -> {
                 setTheme(R.style.EditorLightTheme)
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
             }
@@ -268,10 +260,8 @@ class AztecEditorActivity : AppCompatActivity(),
 
     private fun setupAztecEditor(savedInstanceState: Bundle?) {
         val isDarkMode = isDarkMode()
-        val defaultAppBarColor = if (isDarkMode) Color.BLACK else Color.WHITE
-        val defaultAppBarTextColor = if (isDarkMode) Color.WHITE else Color.BLACK
-        val appBarColor = intent.getIntExtra("appBarColor", defaultAppBarColor)
-        val appBarTextColor = intent.getIntExtra("appBarTextColor", defaultAppBarTextColor)
+        val appBarColor = if (isDarkMode) Color.BLACK else Color.WHITE
+        val appBarTextColor = if (isDarkMode) Color.WHITE else Color.BLACK
         val visualEditor = findViewById<AztecText>(R.id.aztec)
         val aztecToolbar = findViewById<AztecToolbar>(R.id.formatting_toolbar)
         val topToolbar = findViewById<Toolbar>(R.id.top_toolbar)
@@ -282,32 +272,35 @@ class AztecEditorActivity : AppCompatActivity(),
         topToolbar.setTitleTextColor(appBarTextColor)
         topToolbar.setSubtitleTextColor(appBarTextColor)
         setSupportActionBar(topToolbar)
-        setTitle(intent.getStringExtra("title") ?: "")
 
         supportActionBar?.apply {
             setDisplayHomeAsUpEnabled(true)
             setDisplayShowHomeEnabled(true)
             setDisplayShowTitleEnabled(true)
             setHomeButtonEnabled(true)
-            title = intent.getStringExtra("title") ?: ""
+            title = editorConfig?.title ?: ""
         }
 
+        setTitle(editorConfig?.title ?: "")
+
         visualEditor.enableSamsungPredictiveBehaviorOverride()
-        visualEditor.setBackgroundColor(defaultAppBarColor)
+        visualEditor.setBackgroundColor(appBarColor)
         visualEditor.setTextAppearance(android.R.style.TextAppearance)
-        visualEditor.hint = intent.getStringExtra("placeholder") ?: getString(R.string.edit_hint)
-        aztecToolbar.setBackgroundColor(defaultAppBarColor)
+        visualEditor.hint = editorConfig?.placeholder ?: getString(R.string.edit_hint)
+
 
         val toolbarActions = availableToolbarOptions().mapNotNull { toAztecOption(it) }.toSet()
+        aztecToolbar.setBackgroundColor(appBarColor)
         aztecToolbar.setToolbarItems(
             ToolbarItems.BasicLayout(
                 *toolbarActions.toTypedArray()
             )
         )
 
+        val headers = editorConfig?.authHeaders ?: emptyMap()
         aztec = Aztec.with(visualEditor, aztecToolbar, this)
-            .setImageGetter(GlideImageLoader(this))
-            .setVideoThumbnailGetter(GlideVideoThumbnailLoader(this))
+            .setImageGetter(ZGlideImageLoader(this, headers))
+            .setVideoThumbnailGetter(GlideVideoThumbnailLoader(this, headers))
             .setOnImeBackListener(this)
             .setOnTouchListener(this)
             .setHistoryListener(this)
@@ -404,10 +397,7 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun availableToolbarOptions(): List<AztecToolbarOption> {
-        val options = intent.getIntegerArrayListExtra("toolbarOptions")
-        val toolbarOptions =
-            options?.map { AztecToolbarOption.ofRaw(it) } ?: AztecToolbarOption.entries
-        return toolbarOptions.filterNotNull()
+        return editorConfig?.toolbarOptions ?: AztecToolbarOption.entries.toList()
     }
 
     private fun setupInvalidateOptionsHandler() {
@@ -987,6 +977,7 @@ class AztecEditorActivity : AppCompatActivity(),
     private fun showMediaProgressBar() {
         AlertDialog.Builder(this)
             .setCancelable(false)
+            .setTitle("Uploading...")
             .setView(ProgressBar(this))
             .create()
             .also {

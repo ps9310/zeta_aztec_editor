@@ -2,12 +2,6 @@ package com.zebradevs.aztec.editor
 
 import android.app.Activity
 import android.content.Intent
-import com.zebradevs.aztec.AztecEditorApi
-import com.zebradevs.aztec.AztecEditorConfig
-import com.zebradevs.aztec.AztecFlutterApi
-import com.zebradevs.aztec.AztecToolbarOption
-import com.zebradevs.aztec.messages.AztecFlutterContainer
-import com.zebradevs.aztec.utils.runOnUi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -80,19 +74,13 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
             activity?.let { activity ->
                 pendingResult = callback
 
-                var toolbarOptions = config.toolbarOptions ?: AztecToolbarOption.entries
-                if (toolbarOptions.isEmpty()) {
-                    toolbarOptions = AztecToolbarOption.entries
-                }
+                val editorConfig = EditorConfig.from(config)
 
                 val intent = AztecEditorActivity.createIntent(
                     activity,
-                    title = config.title,
-                    placeholder = config.placeholder,
                     initialHtml = initialHtml,
-                    theme = config.theme.toString(),
-                    toolbarOptions = toolbarOptions,
                     editorToken = editorToken,
+                    editorConfig = editorConfig,
                 )
 
                 activity.startActivityForResult(
@@ -104,7 +92,6 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     }
 
     private fun correctVideoTags(html: String): String {
-        if (html.isEmpty()) return html
-        return html.replace("""\[video src="([^"]+)"]""".toRegex(), """<video src="$1"></video>""")
+        return html.replace(videoRegex, """<video src="$1"></video>""")
     }
 }
