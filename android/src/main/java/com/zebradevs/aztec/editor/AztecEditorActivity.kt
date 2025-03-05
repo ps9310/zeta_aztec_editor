@@ -31,6 +31,8 @@ import android.widget.PopupMenu
 import android.widget.ProgressBar
 import android.widget.ToggleButton
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -136,6 +138,9 @@ class AztecEditorActivity : AppCompatActivity(),
 
     private var mIsKeyboardOpen = false
     private var mHideActionBarOnSoftKeyboardUp = false
+    private lateinit var videoOptionLauncher: ActivityResultLauncher<Intent>
+    private lateinit var imageCaptureLauncher: ActivityResultLauncher<Intent>
+    private lateinit var imageSelectLauncher: ActivityResultLauncher<Intent>
     // endregion
 
     // region Lifecycle & Setup
@@ -148,6 +153,27 @@ class AztecEditorActivity : AppCompatActivity(),
         setupEditorConfiguration()
         setupAztecEditor(savedInstanceState)
         setupInvalidateOptionsHandler()
+
+        videoOptionLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    handleVideoResult(result.data)
+                }
+            }
+
+        imageSelectLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    handleGalleryPhotoResult(result.data)
+                }
+            }
+
+        imageCaptureLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    handleCameraPhotoResult()
+                }
+            }
     }
 
     override fun onStart() {
@@ -395,19 +421,11 @@ class AztecEditorActivity : AppCompatActivity(),
         if (AztecToolbarOption.UNDERLINE == option) return ToolbarAction.UNDERLINE
         if (AztecToolbarOption.STRIKETHROUGH == option) return ToolbarAction.STRIKETHROUGH
         if (AztecToolbarOption.HEADING == option) return ToolbarAction.HEADING
-        if (AztecToolbarOption.LIST == option) return ToolbarAction.LIST
         if (AztecToolbarOption.UNORDERED_LIST == option) return ToolbarAction.UNORDERED_LIST
         if (AztecToolbarOption.ORDERED_LIST == option) return ToolbarAction.ORDERED_LIST
-        if (AztecToolbarOption.TASK_LIST == option) return ToolbarAction.TASK_LIST
-        if (AztecToolbarOption.INDENT == option) return ToolbarAction.INDENT
-        if (AztecToolbarOption.OUTDENT == option) return ToolbarAction.OUTDENT
-        if (AztecToolbarOption.ALIGN_LEFT == option) return ToolbarAction.ALIGN_LEFT
-        if (AztecToolbarOption.ALIGN_CENTER == option) return ToolbarAction.ALIGN_CENTER
-        if (AztecToolbarOption.ALIGN_RIGHT == option) return ToolbarAction.ALIGN_RIGHT
         if (AztecToolbarOption.QUOTE == option) return ToolbarAction.QUOTE
         if (AztecToolbarOption.LINK == option) return ToolbarAction.LINK
         if (AztecToolbarOption.CODE == option) return ToolbarAction.CODE
-        if (AztecToolbarOption.PREFORMAT == option) return ToolbarAction.PREFORMAT
         if (AztecToolbarOption.HORIZONTAL_RULE == option) return ToolbarAction.HORIZONTAL_RULE
         if (AztecToolbarOption.IMAGE == option || AztecToolbarOption.VIDEO == option) return ToolbarAction.ADD_MEDIA_COLLAPSE
         return null
@@ -416,26 +434,6 @@ class AztecEditorActivity : AppCompatActivity(),
     // endregion
 
     // region Media Handling
-//
-//    override fun onActivityResult(
-//        requestCode: Int,
-//        resultCode: Int,
-//        data: Intent?,
-//        caller: ComponentCaller
-//    ) {
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (resultCode != Activity.RESULT_OK) return
-
-        when (requestCode) {
-            REQUEST_MEDIA_CAMERA_PHOTO -> handleCameraPhotoResult()
-            REQUEST_MEDIA_PHOTO -> handleGalleryPhotoResult(data)
-            REQUEST_MEDIA_CAMERA_VIDEO -> handleVideoResult(data)
-            REQUEST_MEDIA_VIDEO -> handleVideoResult(data)
-        }
-        super.onActivityResult(requestCode, resultCode, data)
-    }
-
     private fun handleCameraPhotoResult() {
         // For camera photo, mediaPath is already set to the external file path.
         val sourceFile = File(mediaPath)
@@ -639,7 +637,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 FileProvider.getUriForFile(this, "$packageName.provider", File(mediaPath))
             )
             if (intent.resolveActivity(packageManager) != null) {
-                startActivityForResult(intent, REQUEST_MEDIA_CAMERA_PHOTO)
+                imageCaptureLauncher.launch(intent)
             }
         }
     }
@@ -651,7 +649,7 @@ class AztecEditorActivity : AppCompatActivity(),
         ) {
             val intent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
             if (intent.resolveActivity(packageManager) != null) {
-                startActivityForResult(intent, REQUEST_MEDIA_CAMERA_VIDEO)
+                videoOptionLauncher.launch(intent)
             }
         }
     }
@@ -666,7 +664,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 type = "image/*"
             }
             try {
-                startActivityForResult(intent, REQUEST_MEDIA_PHOTO)
+                imageSelectLauncher.launch(intent)
             } catch (exception: ActivityNotFoundException) {
                 AppLog.e(AppLog.T.EDITOR, exception.message)
                 ToastUtils.showToast(
@@ -688,7 +686,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 type = "video/*"
             }
             try {
-                startActivityForResult(intent, REQUEST_MEDIA_VIDEO)
+                videoOptionLauncher.launch(intent)
             } catch (exception: ActivityNotFoundException) {
                 AppLog.e(AppLog.T.EDITOR, exception.message)
                 ToastUtils.showToast(
