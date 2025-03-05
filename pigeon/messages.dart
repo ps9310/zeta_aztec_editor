@@ -48,14 +48,14 @@ enum AztecEditorTheme {
 }
 
 class AztecEditorConfig {
+  final String title;
   final String? primaryColor;
   final String? backgroundColor;
   final String? textColor;
   final String? placeholder;
+  final AztecEditorTheme? theme;
   final List<String>? fileExtensions;
   final List<AztecToolbarOption>? toolbarOptions;
-  final String title;
-  final AztecEditorTheme theme;
   final Map<String, String>? authHeaders;
 
   AztecEditorConfig({
@@ -67,7 +67,7 @@ class AztecEditorConfig {
     this.fileExtensions,
     this.toolbarOptions,
     this.authHeaders,
-    this.theme = AztecEditorTheme.system,
+    this.theme,
   });
 }
 

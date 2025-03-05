@@ -27,7 +27,7 @@ data class EditorConfig(
                 placeholder = aztecConfig.placeholder,
                 fileExtensions = aztecConfig.fileExtensions,
                 title = aztecConfig.title,
-                theme = aztecConfig.theme,
+                theme = aztecConfig.theme ?: AztecEditorTheme.LIGHT,
                 toolbarOptions = aztecConfig.toolbarOptions ?: AztecToolbarOption.entries,
                 authHeaders = aztecConfig.authHeaders ?: emptyMap()
             )

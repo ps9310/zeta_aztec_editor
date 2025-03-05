@@ -85,41 +85,41 @@ enum class AztecEditorTheme(val raw: Int) {
 
 /** Generated class from Pigeon that represents data sent in messages. */
 data class AztecEditorConfig (
+  val title: String,
   val primaryColor: String? = null,
   val backgroundColor: String? = null,
   val textColor: String? = null,
   val placeholder: String? = null,
+  val theme: AztecEditorTheme? = null,
   val fileExtensions: List<String>? = null,
   val toolbarOptions: List<AztecToolbarOption>? = null,
-  val title: String,
-  val theme: AztecEditorTheme,
   val authHeaders: Map<String, String>? = null
 )
  {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): AztecEditorConfig {
-      val primaryColor = pigeonVar_list[0] as String?
-      val backgroundColor = pigeonVar_list[1] as String?
-      val textColor = pigeonVar_list[2] as String?
-      val placeholder = pigeonVar_list[3] as String?
-      val fileExtensions = pigeonVar_list[4] as List<String>?
-      val toolbarOptions = pigeonVar_list[5] as List<AztecToolbarOption>?
-      val title = pigeonVar_list[6] as String
-      val theme = pigeonVar_list[7] as AztecEditorTheme
+      val title = pigeonVar_list[0] as String
+      val primaryColor = pigeonVar_list[1] as String?
+      val backgroundColor = pigeonVar_list[2] as String?
+      val textColor = pigeonVar_list[3] as String?
+      val placeholder = pigeonVar_list[4] as String?
+      val theme = pigeonVar_list[5] as AztecEditorTheme?
+      val fileExtensions = pigeonVar_list[6] as List<String>?
+      val toolbarOptions = pigeonVar_list[7] as List<AztecToolbarOption>?
       val authHeaders = pigeonVar_list[8] as Map<String, String>?
-      return AztecEditorConfig(primaryColor, backgroundColor, textColor, placeholder, fileExtensions, toolbarOptions, title, theme, authHeaders)
+      return AztecEditorConfig(title, primaryColor, backgroundColor, textColor, placeholder, theme, fileExtensions, toolbarOptions, authHeaders)
     }
   }
   fun toList(): List<Any?> {
     return listOf(
+      title,
       primaryColor,
       backgroundColor,
       textColor,
       placeholder,
+      theme,
       fileExtensions,
       toolbarOptions,
-      title,
-      theme,
       authHeaders,
     )
   }

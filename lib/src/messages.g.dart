@@ -49,16 +49,18 @@ enum AztecEditorTheme {
 
 class AztecEditorConfig {
   AztecEditorConfig({
+    required this.title,
     this.primaryColor,
     this.backgroundColor,
     this.textColor,
     this.placeholder,
+    this.theme,
     this.fileExtensions,
     this.toolbarOptions,
-    required this.title,
-    required this.theme,
     this.authHeaders,
   });
+
+  String title;
 
   String? primaryColor;
 
@@ -68,26 +70,24 @@ class AztecEditorConfig {
 
   String? placeholder;
 
+  AztecEditorTheme? theme;
+
   List<String>? fileExtensions;
 
   List<AztecToolbarOption>? toolbarOptions;
-
-  String title;
-
-  AztecEditorTheme theme;
 
   Map<String, String>? authHeaders;
 
   Object encode() {
     return <Object?>[
+      title,
       primaryColor,
       backgroundColor,
       textColor,
       placeholder,
+      theme,
       fileExtensions,
       toolbarOptions,
-      title,
-      theme,
       authHeaders,
     ];
   }
@@ -95,14 +95,14 @@ class AztecEditorConfig {
   static AztecEditorConfig decode(Object result) {
     result as List<Object?>;
     return AztecEditorConfig(
-      primaryColor: result[0] as String?,
-      backgroundColor: result[1] as String?,
-      textColor: result[2] as String?,
-      placeholder: result[3] as String?,
-      fileExtensions: (result[4] as List<Object?>?)?.cast<String>(),
-      toolbarOptions: (result[5] as List<Object?>?)?.cast<AztecToolbarOption>(),
-      title: result[6]! as String,
-      theme: result[7]! as AztecEditorTheme,
+      title: result[0]! as String,
+      primaryColor: result[1] as String?,
+      backgroundColor: result[2] as String?,
+      textColor: result[3] as String?,
+      placeholder: result[4] as String?,
+      theme: result[5] as AztecEditorTheme?,
+      fileExtensions: (result[6] as List<Object?>?)?.cast<String>(),
+      toolbarOptions: (result[7] as List<Object?>?)?.cast<AztecToolbarOption>(),
       authHeaders: (result[8] as Map<Object?, Object?>?)?.cast<String, String>(),
     );
   }

@@ -92,51 +92,51 @@ enum AztecEditorTheme: Int {
 
 /// Generated class from Pigeon that represents data sent in messages.
 struct AztecEditorConfig {
+  var title: String
   var primaryColor: String? = nil
   var backgroundColor: String? = nil
   var textColor: String? = nil
   var placeholder: String? = nil
+  var theme: AztecEditorTheme? = nil
   var fileExtensions: [String]? = nil
   var toolbarOptions: [AztecToolbarOption]? = nil
-  var title: String
-  var theme: AztecEditorTheme
   var authHeaders: [String: String]? = nil
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> AztecEditorConfig? {
-    let primaryColor: String? = nilOrValue(pigeonVar_list[0])
-    let backgroundColor: String? = nilOrValue(pigeonVar_list[1])
-    let textColor: String? = nilOrValue(pigeonVar_list[2])
-    let placeholder: String? = nilOrValue(pigeonVar_list[3])
-    let fileExtensions: [String]? = nilOrValue(pigeonVar_list[4])
-    let toolbarOptions: [AztecToolbarOption]? = nilOrValue(pigeonVar_list[5])
-    let title = pigeonVar_list[6] as! String
-    let theme = pigeonVar_list[7] as! AztecEditorTheme
+    let title = pigeonVar_list[0] as! String
+    let primaryColor: String? = nilOrValue(pigeonVar_list[1])
+    let backgroundColor: String? = nilOrValue(pigeonVar_list[2])
+    let textColor: String? = nilOrValue(pigeonVar_list[3])
+    let placeholder: String? = nilOrValue(pigeonVar_list[4])
+    let theme: AztecEditorTheme? = nilOrValue(pigeonVar_list[5])
+    let fileExtensions: [String]? = nilOrValue(pigeonVar_list[6])
+    let toolbarOptions: [AztecToolbarOption]? = nilOrValue(pigeonVar_list[7])
     let authHeaders: [String: String]? = nilOrValue(pigeonVar_list[8])
 
     return AztecEditorConfig(
+      title: title,
       primaryColor: primaryColor,
       backgroundColor: backgroundColor,
       textColor: textColor,
       placeholder: placeholder,
+      theme: theme,
       fileExtensions: fileExtensions,
       toolbarOptions: toolbarOptions,
-      title: title,
-      theme: theme,
       authHeaders: authHeaders
     )
   }
   func toList() -> [Any?] {
     return [
+      title,
       primaryColor,
       backgroundColor,
       textColor,
       placeholder,
+      theme,
       fileExtensions,
       toolbarOptions,
-      title,
-      theme,
       authHeaders,
     ]
   }
