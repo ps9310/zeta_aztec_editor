@@ -860,7 +860,7 @@ extension AztecEditorController {
     @objc func showImagePicker() {
         view.endEditing(true)
         // Create an action sheet to let the user choose between camera and photo library.
-        let alert = UIAlertController(title: "Add Media", message: "Choose media from:", preferredStyle: .actionSheet)
+        let alert = UIAlertController(title: "Add Media from?", message: nil, preferredStyle: .actionSheet)
         
         // Action for the camera.
         let cameraAction = UIAlertAction(title: "Camera", style: .default) { _ in
@@ -897,7 +897,7 @@ extension AztecEditorController {
         // Use the available media types for the chosen source.
         picker.mediaTypes = UIImagePickerController.availableMediaTypes(for: source) ?? []
         picker.delegate = self
-        picker.allowsEditing = true
+        picker.allowsEditing = false
         picker.navigationBar.isTranslucent = false
         picker.modalPresentationStyle = .currentContext
         
@@ -924,7 +924,7 @@ extension AztecEditorController {
             option == .image || option == .video
         }
         
-        let scrollableItems =  toolbarOptions.map(aztecIdentifier(from:)).map(makeToolbarButton(identifier:))
+        
         
         let toolbar = Aztec.FormatBar()
         toolbar.backgroundColor = UIColor.systemGroupedBackground
@@ -936,12 +936,15 @@ extension AztecEditorController {
         toolbar.overflowToggleIcon = UIImage(systemName: "ellipsis")!
         toolbar.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 44.0)
         toolbar.formatter = self
+        toolbar.overflowToolbar(expand: true)
         toolbar.autoresizingMask = [.flexibleHeight]
         
         if config.toolbarOptions?.contains(.image) ?? false || config.toolbarOptions?.contains(.video) ?? false {
             let mediaItem = makeToolbarButton(identifier: .media)
             toolbar.leadingItem = mediaItem
         }
+        
+        let scrollableItems =  toolbarOptions.map(aztecIdentifier(from:)).map(makeToolbarButton(identifier:))
         
         toolbar.setDefaultItems(scrollableItems)
         

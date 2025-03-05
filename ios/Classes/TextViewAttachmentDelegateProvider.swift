@@ -141,7 +141,7 @@ private extension TextViewAttachmentDelegateProvider {
         DispatchQueue.global(qos: .background).async {
             // Use auth headers if available.
             var assetOptions: [String: Any]? = nil
-            if let headers = self.authHeaders {
+            if let headers = self.authHeaders, headers.isEmpty == false {
                 assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": headers]
             }
                     
