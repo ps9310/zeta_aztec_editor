@@ -1,9 +1,6 @@
 package com.zebradevs.aztec.editor
 
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
 import kotlin.test.Test
-import org.mockito.Mockito
 
 /*
  * This demonstrates a simple unit test of the Kotlin portion of this plugin's implementation.
@@ -14,8 +11,8 @@ import org.mockito.Mockito
  */
 
 internal class ZetaAztecEditorPluginTest {
-  @Test
-  fun onMethodCall_getPlatformVersion_returnsExpectedValue() {
+    @Test
+    fun onMethodCall_getPlatformVersion_returnsExpectedValue() {
 //    val plugin = ZetaAztecEditorPlugin()
 //
 //    val call = MethodCall("getPlatformVersion", null)
@@ -23,5 +20,5 @@ internal class ZetaAztecEditorPluginTest {
 //    plugin.onMethodCall(call, mockResult)
 //
 //    Mockito.verify(mockResult).success("Android " + android.os.Build.VERSION.RELEASE)
-  }
+    }
 }
