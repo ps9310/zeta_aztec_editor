@@ -66,7 +66,6 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
 
     override fun launch(
         initialHtml: String?,
-        editorToken: String,
         config: AztecEditorConfig,
         callback: (Result<String?>) -> Unit
     ) {
@@ -79,7 +78,6 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
                 val intent = AztecEditorActivity.createIntent(
                     activity,
                     initialHtml = initialHtml,
-                    editorToken = editorToken,
                     editorConfig = editorConfig,
                 )
 

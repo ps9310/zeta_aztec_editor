@@ -160,14 +160,14 @@ class AztecEditorApi {
 
   final String pigeonVar_messageChannelSuffix;
 
-  Future<String?> launch({String? initialHtml, required String editorToken, required AztecEditorConfig config, }) async {
+  Future<String?> launch({String? initialHtml, required AztecEditorConfig config}) async {
     final String pigeonVar_channelName = 'dev.flutter.pigeon.zeta_aztec_editor.AztecEditorApi.launch$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[initialHtml, editorToken, config]);
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[initialHtml, config]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -187,9 +187,9 @@ class AztecEditorApi {
 abstract class AztecFlutterApi {
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
 
-  Future<String?> onFileSelected(String editorToken, String filePath);
+  Future<String?> onFileSelected(String filePath);
 
-  void onFileDeleted(String editorToken, String filePath);
+  void onFileDeleted(String filePath);
 
   static void setUp(AztecFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
     messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
@@ -204,14 +204,11 @@ abstract class AztecFlutterApi {
           assert(message != null,
           'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected was null.');
           final List<Object?> args = (message as List<Object?>?)!;
-          final String? arg_editorToken = (args[0] as String?);
-          assert(arg_editorToken != null,
-              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected was null, expected non-null String.');
-          final String? arg_filePath = (args[1] as String?);
+          final String? arg_filePath = (args[0] as String?);
           assert(arg_filePath != null,
               'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected was null, expected non-null String.');
           try {
-            final String? output = await api.onFileSelected(arg_editorToken!, arg_filePath!);
+            final String? output = await api.onFileSelected(arg_filePath!);
             return wrapResponse(result: output);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
@@ -232,14 +229,11 @@ abstract class AztecFlutterApi {
           assert(message != null,
           'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted was null.');
           final List<Object?> args = (message as List<Object?>?)!;
-          final String? arg_editorToken = (args[0] as String?);
-          assert(arg_editorToken != null,
-              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted was null, expected non-null String.');
-          final String? arg_filePath = (args[1] as String?);
+          final String? arg_filePath = (args[0] as String?);
           assert(arg_filePath != null,
               'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted was null, expected non-null String.');
           try {
-            api.onFileDeleted(arg_editorToken!, arg_filePath!);
+            api.onFileDeleted(arg_filePath!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);

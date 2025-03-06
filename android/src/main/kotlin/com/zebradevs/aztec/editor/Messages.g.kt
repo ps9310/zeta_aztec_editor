@@ -167,7 +167,7 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
 
 /** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface AztecEditorApi {
-  fun launch(initialHtml: String?, editorToken: String, config: AztecEditorConfig, callback: (Result<String?>) -> Unit)
+  fun launch(initialHtml: String?, config: AztecEditorConfig, callback: (Result<String?>) -> Unit)
 
   companion object {
     /** The codec used by AztecEditorApi. */
@@ -184,9 +184,8 @@ interface AztecEditorApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val initialHtmlArg = args[0] as String?
-            val editorTokenArg = args[1] as String
-            val configArg = args[2] as AztecEditorConfig
-            api.launch(initialHtmlArg, editorTokenArg, configArg) { result: Result<String?> ->
+            val configArg = args[1] as AztecEditorConfig
+            api.launch(initialHtmlArg, configArg) { result: Result<String?> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(wrapError(error))
@@ -211,12 +210,12 @@ class AztecFlutterApi(private val binaryMessenger: BinaryMessenger, private val 
       MessagesPigeonCodec()
     }
   }
-  fun onFileSelected(editorTokenArg: String, filePathArg: String, callback: (Result<String?>) -> Unit)
+  fun onFileSelected(filePathArg: String, callback: (Result<String?>) -> Unit)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
     val channelName = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
-    channel.send(listOf(editorTokenArg, filePathArg)) {
+    channel.send(listOf(filePathArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
@@ -229,12 +228,12 @@ class AztecFlutterApi(private val binaryMessenger: BinaryMessenger, private val 
       } 
     }
   }
-  fun onFileDeleted(editorTokenArg: String, filePathArg: String, callback: (Result<Unit>) -> Unit)
+  fun onFileDeleted(filePathArg: String, callback: (Result<Unit>) -> Unit)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
     val channelName = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
-    channel.send(listOf(editorTokenArg, filePathArg)) {
+    channel.send(listOf(filePathArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))

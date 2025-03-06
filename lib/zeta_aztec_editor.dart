@@ -13,7 +13,7 @@ class ZetaAztecEditor implements AztecFlutterApi {
 
   static final ZetaAztecEditor _instance = ZetaAztecEditor._();
 
-  static final _callbacks = <String, ZetaAztecEditorCallbacks>{};
+  static ZetaAztecEditorCallbacks? _callbacks;
 
   ZetaAztecEditor._() {
     AztecFlutterApi.setUp(this);
@@ -26,27 +26,26 @@ class ZetaAztecEditor implements AztecFlutterApi {
   Future<String?> launch({
     String? initialHtml,
     required AztecEditorConfig config,
-    ZetaAztecEditorCallbacks? callback,
+    required ZetaAztecEditorCallbacks callback,
   }) async {
-    final editorToken = DateTime.now().microsecondsSinceEpoch.toString();
     try {
-      if (callback != null) _callbacks[editorToken] = callback;
-      final result = await _api.launch(initialHtml: initialHtml, editorToken: editorToken, config: config);
+      _callbacks = callback;
+      final result = await _api.launch(initialHtml: initialHtml, config: config);
       return result;
     } catch (e) {
       return initialHtml;
     } finally {
-      _callbacks.remove(editorToken);
+      _callbacks = null;
     }
   }
 
   @override
-  Future<String?> onFileSelected(String editorToken, String filePath) {
-    return _callbacks[editorToken]?.onAztecFileSelected(filePath) ?? Future.value(null);
+  Future<String?> onFileSelected(String filePath) {
+    return _callbacks?.onAztecFileSelected(filePath) ?? Future.value(null);
   }
 
   @override
-  void onFileDeleted(String editorToken, String filePath) {
-    _callbacks[editorToken]?.onAztecFileDeleted(filePath);
+  void onFileDeleted(String filePath) {
+    _callbacks?.onAztecFileDeleted(filePath);
   }
 }

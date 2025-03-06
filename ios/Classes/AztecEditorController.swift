@@ -31,8 +31,7 @@ class AztecEditorController: UIViewController {
         
         inserter.uploadCallback = { fileURL, completion in
             // Call your onFileSelected function with the editor token and file path.
-            AztecFlutterContainer.shared.flutterApi?
-                .onFileSelected(editorToken: self.editorToken, filePath: fileURL.path) { result in
+            AztecFlutterContainer.shared.flutterApi?.onFileSelected(filePath: fileURL.path) { result in
                 // When the upload finishes, invoke the completion closure.
                 completion(result)
             }
@@ -97,7 +96,6 @@ class AztecEditorController: UIViewController {
     }
     
     let initialHtml: String?;
-    let editorToken: String;
     let config: AztecEditorConfig;
     let completion: (Result<String?, any Error>) -> Void
     
@@ -106,12 +104,10 @@ class AztecEditorController: UIViewController {
     // MARK: - Lifecycle Methods
     init(
         initialHtml: String?,
-        editorToken: String,
         config: AztecEditorConfig,
         completion: @escaping (Result<String?, any Error>) -> Void
     ) {
         self.config = config
-        self.editorToken = editorToken
         self.initialHtml = initialHtml
         self.completion = completion
         super.init(nibName: nil, bundle: nil)

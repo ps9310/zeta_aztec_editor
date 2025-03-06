@@ -74,13 +74,13 @@ class AztecEditorConfig {
 @HostApi()
 abstract class AztecEditorApi {
   @async
-  String? launch({String? initialHtml, required String editorToken, required AztecEditorConfig config});
+  String? launch({String? initialHtml, required AztecEditorConfig config});
 }
 
 @FlutterApi()
 abstract class AztecFlutterApi {
   @async
-  String? onFileSelected(String editorToken, String filePath);
+  String? onFileSelected(String filePath);
 
-  void onFileDeleted(String editorToken, String filePath);
+  void onFileDeleted(String filePath);
 }

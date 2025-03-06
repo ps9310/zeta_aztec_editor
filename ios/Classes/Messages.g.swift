@@ -199,7 +199,7 @@ class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
 
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol AztecEditorApi {
-  func launch(initialHtml: String?, editorToken: String, config: AztecEditorConfig, completion: @escaping (Result<String?, Error>) -> Void)
+  func launch(initialHtml: String?, config: AztecEditorConfig, completion: @escaping (Result<String?, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -213,9 +213,8 @@ class AztecEditorApiSetup {
       launchChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let initialHtmlArg: String? = nilOrValue(args[0])
-        let editorTokenArg = args[1] as! String
-        let configArg = args[2] as! AztecEditorConfig
-        api.launch(initialHtml: initialHtmlArg, editorToken: editorTokenArg, config: configArg) { result in
+        let configArg = args[1] as! AztecEditorConfig
+        api.launch(initialHtml: initialHtmlArg, config: configArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -231,8 +230,8 @@ class AztecEditorApiSetup {
 }
 /// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
 protocol AztecFlutterApiProtocol {
-  func onFileSelected(editorToken editorTokenArg: String, filePath filePathArg: String, completion: @escaping (Result<String?, PigeonError>) -> Void)
-  func onFileDeleted(editorToken editorTokenArg: String, filePath filePathArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onFileSelected(filePath filePathArg: String, completion: @escaping (Result<String?, PigeonError>) -> Void)
+  func onFileDeleted(filePath filePathArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void)
 }
 class AztecFlutterApi: AztecFlutterApiProtocol {
   private let binaryMessenger: FlutterBinaryMessenger
@@ -244,10 +243,10 @@ class AztecFlutterApi: AztecFlutterApiProtocol {
   var codec: MessagesPigeonCodec {
     return MessagesPigeonCodec.shared
   }
-  func onFileSelected(editorToken editorTokenArg: String, filePath filePathArg: String, completion: @escaping (Result<String?, PigeonError>) -> Void) {
+  func onFileSelected(filePath filePathArg: String, completion: @escaping (Result<String?, PigeonError>) -> Void) {
     let channelName: String = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
-    channel.sendMessage([editorTokenArg, filePathArg] as [Any?]) { response in
+    channel.sendMessage([filePathArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return
@@ -263,10 +262,10 @@ class AztecFlutterApi: AztecFlutterApiProtocol {
       }
     }
   }
-  func onFileDeleted(editorToken editorTokenArg: String, filePath filePathArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+  func onFileDeleted(filePath filePathArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void) {
     let channelName: String = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
-    channel.sendMessage([editorTokenArg, filePathArg] as [Any?]) { response in
+    channel.sendMessage([filePathArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return

@@ -98,12 +98,10 @@ class AztecEditorActivity : AppCompatActivity(),
         fun createIntent(
             activity: Activity,
             initialHtml: String?,
-            editorToken: String,
             editorConfig: EditorConfig
         ): Intent {
             return Intent(activity, AztecEditorActivity::class.java).apply {
                 putExtra("initialHtml", initialHtml)
-                putExtra("editorToken", editorToken)
                 putExtra("editorConfig", editorConfig)
             }
         }
@@ -252,10 +250,6 @@ class AztecEditorActivity : AppCompatActivity(),
         ) {
             mHideActionBarOnSoftKeyboardUp = true
         }
-    }
-
-    private fun editorToken(): String {
-        return intent.getStringExtra("editorToken") ?: ""
     }
 
     private fun setupAztecEditor(savedInstanceState: Bundle?) {
@@ -565,7 +559,7 @@ class AztecEditorActivity : AppCompatActivity(),
         aztec.visualEditor.updateElementAttributes(predicate, attrs)
 
         runOnUiThread { showMediaProgressBar() }
-        AztecFlutterContainer.flutterApi?.onFileSelected(editorToken(), mediaPath) {
+        AztecFlutterContainer.flutterApi?.onFileSelected(mediaPath) {
             runOnUiThread { mediaProgressDialog?.dismiss() }
             if (it.isSuccess && it.getOrNull()?.isNotEmpty() == true) {
                 attrs.removeAttribute(attrs.getIndex("uploading"))
@@ -955,7 +949,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
     override fun onMediaDeleted(attrs: AztecAttributes) {
         try {
-            AztecFlutterContainer.flutterApi?.onFileDeleted(editorToken(), attrs.getValue("src")) {}
+            AztecFlutterContainer.flutterApi?.onFileDeleted(attrs.getValue("src")) {}
         } catch (e: Exception) {
             AppLog.e(AppLog.T.EDITOR, e)
         }

@@ -10,13 +10,11 @@ public class ZetaAztecEditorPlugin: NSObject, FlutterPlugin, AztecEditorApi {
     
     func launch(
         initialHtml: String?,
-        editorToken: String,
         config: AztecEditorConfig,
         completion: @escaping (Result<String?, any Error>) -> Void
     ) {
         let controller = AztecEditorController(
             initialHtml: initialHtml,
-            editorToken: editorToken,
             config: config,
             completion: completion
         )
