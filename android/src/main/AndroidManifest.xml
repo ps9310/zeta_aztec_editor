@@ -24,7 +24,7 @@
 
     <application>
         <activity
-            android:name=".AztecEditorActivity"
+            android:name=".activity.AztecEditorActivity"
             android:exported="false"
             android:theme="@style/EditorLightTheme" />
 

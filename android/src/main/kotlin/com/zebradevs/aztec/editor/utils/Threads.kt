@@ -1,4 +1,4 @@
-package com.zebradevs.aztec.editor
+package com.zebradevs.aztec.editor.utils
 
 import android.os.Handler
 import android.os.Looper

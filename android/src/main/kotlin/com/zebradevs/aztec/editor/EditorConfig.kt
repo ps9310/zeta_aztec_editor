@@ -1,6 +1,9 @@
 package com.zebradevs.aztec.editor
 
 import android.os.Parcelable
+import com.zebradevs.aztec.editor.messages.AztecEditorConfig
+import com.zebradevs.aztec.editor.messages.AztecEditorTheme
+import com.zebradevs.aztec.editor.messages.AztecToolbarOption
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 
@@ -12,7 +15,6 @@ data class EditorConfig(
     val placeholder: String? = null,
     val title: String,
     val theme: AztecEditorTheme,
-    val fileExtensions: List<String>? = null,
     val toolbarOptions: List<AztecToolbarOption>,
     val authHeaders: @RawValue Map<String, String>
 ) : Parcelable {
@@ -25,7 +27,6 @@ data class EditorConfig(
                 backgroundColor = aztecConfig.backgroundColor,
                 textColor = aztecConfig.textColor,
                 placeholder = aztecConfig.placeholder,
-                fileExtensions = aztecConfig.fileExtensions,
                 title = aztecConfig.title,
                 theme = aztecConfig.theme ?: AztecEditorTheme.LIGHT,
                 toolbarOptions = aztecConfig.toolbarOptions ?: AztecToolbarOption.entries,

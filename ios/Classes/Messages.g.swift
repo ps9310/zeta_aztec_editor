@@ -97,8 +97,8 @@ struct AztecEditorConfig {
   var backgroundColor: String? = nil
   var textColor: String? = nil
   var placeholder: String? = nil
+  var characterLimit: Int64? = nil
   var theme: AztecEditorTheme? = nil
-  var fileExtensions: [String]? = nil
   var toolbarOptions: [AztecToolbarOption]? = nil
   var authHeaders: [String: String]? = nil
 
@@ -110,8 +110,8 @@ struct AztecEditorConfig {
     let backgroundColor: String? = nilOrValue(pigeonVar_list[2])
     let textColor: String? = nilOrValue(pigeonVar_list[3])
     let placeholder: String? = nilOrValue(pigeonVar_list[4])
-    let theme: AztecEditorTheme? = nilOrValue(pigeonVar_list[5])
-    let fileExtensions: [String]? = nilOrValue(pigeonVar_list[6])
+    let characterLimit: Int64? = nilOrValue(pigeonVar_list[5])
+    let theme: AztecEditorTheme? = nilOrValue(pigeonVar_list[6])
     let toolbarOptions: [AztecToolbarOption]? = nilOrValue(pigeonVar_list[7])
     let authHeaders: [String: String]? = nilOrValue(pigeonVar_list[8])
 
@@ -121,8 +121,8 @@ struct AztecEditorConfig {
       backgroundColor: backgroundColor,
       textColor: textColor,
       placeholder: placeholder,
+      characterLimit: characterLimit,
       theme: theme,
-      fileExtensions: fileExtensions,
       toolbarOptions: toolbarOptions,
       authHeaders: authHeaders
     )
@@ -134,8 +134,8 @@ struct AztecEditorConfig {
       backgroundColor,
       textColor,
       placeholder,
+      characterLimit,
       theme,
-      fileExtensions,
       toolbarOptions,
       authHeaders,
     ]
@@ -230,8 +230,9 @@ class AztecEditorApiSetup {
 }
 /// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
 protocol AztecFlutterApiProtocol {
-  func onFileSelected(filePath filePathArg: String, completion: @escaping (Result<String?, PigeonError>) -> Void)
-  func onFileDeleted(filePath filePathArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onAztecFileSelected(filePath filePathArg: String, completion: @escaping (Result<String?, PigeonError>) -> Void)
+  func onAztecFileDeleted(filePath filePathArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onAztecHtmlChanged(data dataArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void)
 }
 class AztecFlutterApi: AztecFlutterApiProtocol {
   private let binaryMessenger: FlutterBinaryMessenger
@@ -243,8 +244,8 @@ class AztecFlutterApi: AztecFlutterApiProtocol {
   var codec: MessagesPigeonCodec {
     return MessagesPigeonCodec.shared
   }
-  func onFileSelected(filePath filePathArg: String, completion: @escaping (Result<String?, PigeonError>) -> Void) {
-    let channelName: String = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected\(messageChannelSuffix)"
+  func onAztecFileSelected(filePath filePathArg: String, completion: @escaping (Result<String?, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecFileSelected\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
     channel.sendMessage([filePathArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
@@ -262,10 +263,28 @@ class AztecFlutterApi: AztecFlutterApiProtocol {
       }
     }
   }
-  func onFileDeleted(filePath filePathArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void) {
-    let channelName: String = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted\(messageChannelSuffix)"
+  func onAztecFileDeleted(filePath filePathArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecFileDeleted\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
     channel.sendMessage([filePathArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        completion(.success(()))
+      }
+    }
+  }
+  func onAztecHtmlChanged(data dataArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecHtmlChanged\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([dataArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return

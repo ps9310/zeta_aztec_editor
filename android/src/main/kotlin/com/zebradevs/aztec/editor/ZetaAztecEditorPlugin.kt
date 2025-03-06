@@ -2,6 +2,11 @@ package com.zebradevs.aztec.editor
 
 import android.app.Activity
 import android.content.Intent
+import com.zebradevs.aztec.editor.activity.AztecEditorActivity
+import com.zebradevs.aztec.editor.messages.AztecEditorApi
+import com.zebradevs.aztec.editor.messages.AztecEditorConfig
+import com.zebradevs.aztec.editor.messages.AztecFlutterApi
+import com.zebradevs.aztec.editor.utils.runOnUi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -50,7 +55,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == AztecEditorActivity.REQUEST_CODE) {
             val result = if (resultCode == Activity.RESULT_OK) {
-                Result.success(correctVideoTags(data?.getStringExtra("html") ?: ""))
+                Result.success(data?.getStringExtra("html") ?: "")
             } else {
                 Result.failure(Exception("Editor was cancelled"))
             }
@@ -87,9 +92,5 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
                 )
             }
         }
-    }
-
-    private fun correctVideoTags(html: String): String {
-        return html.replace(videoRegex, """<video src="$1"></video>""")
     }
 }

@@ -1,4 +1,4 @@
-package com.zebradevs.aztec.editor
+package com.zebradevs.aztec.editor.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -21,7 +21,10 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
@@ -43,6 +46,16 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
 import androidx.core.view.forEach
+import com.zebradevs.aztec.editor.AztecFlutterContainer
+import com.zebradevs.aztec.editor.EditorConfig
+import com.zebradevs.aztec.editor.R
+import com.zebradevs.aztec.editor.messages.AztecEditorTheme
+import com.zebradevs.aztec.editor.messages.AztecToolbarOption
+import com.zebradevs.aztec.editor.toolbar.MediaToolbarImageButton
+import com.zebradevs.aztec.editor.toolbar.MediaToolbarVideoButton
+import com.zebradevs.aztec.editor.utils.GlideVideoThumbnailLoader
+import com.zebradevs.aztec.editor.utils.ZGlideImageLoader
+import com.zebradevs.aztec.editor.utils.videoRegex
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.ImageUtils
 import org.wordpress.android.util.PermissionUtils
@@ -125,7 +138,9 @@ class AztecEditorActivity : AppCompatActivity(),
     private lateinit var videoOptionLauncher: ActivityResultLauncher<Intent>
     private lateinit var imageCaptureLauncher: ActivityResultLauncher<Intent>
     private lateinit var imageSelectLauncher: ActivityResultLauncher<Intent>
-
+    private val DEBOUNCE_DELAY: Long = 750
+    private val debounceHandler = Handler(Looper.getMainLooper())
+    private var debounceRunnable: Runnable? = null
     private var editorConfig: EditorConfig? = null
     // endregion
 
@@ -282,7 +297,6 @@ class AztecEditorActivity : AppCompatActivity(),
         visualEditor.setTextAppearance(android.R.style.TextAppearance)
         visualEditor.hint = editorConfig?.placeholder ?: getString(R.string.edit_hint)
 
-
         val toolbarActions = availableToolbarOptions().mapNotNull { toAztecOption(it) }.toSet()
         aztecToolbar.setBackgroundColor(appBarColor)
         aztecToolbar.setToolbarItems(
@@ -301,8 +315,8 @@ class AztecEditorActivity : AppCompatActivity(),
             .setOnImageTappedListener(this)
             .setOnVideoTappedListener(this)
             .setOnAudioTappedListener(this)
-            .addOnMediaDeletedListener(this)
             .setOnVideoInfoRequestedListener(this)
+            .addOnMediaDeletedListener(this)
             .addPlugin(WordPressCommentsPlugin(visualEditor))
             .addPlugin(CaptionShortcodePlugin(visualEditor))
             .addPlugin(VideoShortcodePlugin())
@@ -351,6 +365,33 @@ class AztecEditorActivity : AppCompatActivity(),
         aztec.sourceEditor?.setCalypsoMode(false)
         aztec.visualEditor.fromHtml(intent.getStringExtra("initialHtml") ?: "")
 
+        aztec.visualEditor.addTextChangedListener(
+            object : TextWatcher {
+                override fun beforeTextChanged(
+                    s: CharSequence?,
+                    start: Int,
+                    count: Int,
+                    after: Int
+                ) {
+                }
+
+                override fun afterTextChanged(s: Editable?) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    // Cancel any previously scheduled update
+                    debounceRunnable?.let { debounceHandler.removeCallbacks(it) }
+                    // Create a new Runnable to send the update after the debounce delay
+                    debounceRunnable = Runnable {
+                        val htmlContent = correctVideoTags(aztec.visualEditor.toHtml())
+                        AztecFlutterContainer.flutterApi?.onAztecHtmlChanged(htmlContent) {
+                            Log.d("AztecEditorActivity", "HTML > flutter : $htmlContent")
+                        }
+                    }
+                    // Post the runnable with the debounce delay
+                    debounceHandler.postDelayed(debounceRunnable!!, DEBOUNCE_DELAY)
+                }
+            }
+        )
+
         if (savedInstanceState == null) {
             aztec.initSourceEditorHistory()
         }
@@ -378,10 +419,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 || availableToolbarOptions.contains(AztecToolbarOption.VIDEO)
             ) {
                 it.setBackgroundColor(
-                    ContextCompat.getColor(
-                        this,
-                        R.color.aztec_toolbar_border
-                    )
+                    ContextCompat.getColor(this, R.color.aztec_toolbar_border)
                 )
                 it.visibility = View.VISIBLE
             } else {
@@ -559,7 +597,7 @@ class AztecEditorActivity : AppCompatActivity(),
         aztec.visualEditor.updateElementAttributes(predicate, attrs)
 
         runOnUiThread { showMediaProgressBar() }
-        AztecFlutterContainer.flutterApi?.onFileSelected(mediaPath) {
+        AztecFlutterContainer.flutterApi?.onAztecFileSelected(mediaPath) {
             runOnUiThread { mediaProgressDialog?.dismiss() }
             if (it.isSuccess && it.getOrNull()?.isNotEmpty() == true) {
                 attrs.removeAttribute(attrs.getIndex("uploading"))
@@ -830,7 +868,7 @@ class AztecEditorActivity : AppCompatActivity(),
     override fun onRedo() {}
 
     private fun doneEditing() {
-        val html = aztec.visualEditor.toHtml()
+        val html = correctVideoTags(aztec.visualEditor.toHtml())
         setResult(RESULT_OK, Intent().apply { putExtra("html", html) })
         finish()
     }
@@ -949,7 +987,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
     override fun onMediaDeleted(attrs: AztecAttributes) {
         try {
-            AztecFlutterContainer.flutterApi?.onFileDeleted(attrs.getValue("src")) {}
+            AztecFlutterContainer.flutterApi?.onAztecFileDeleted(attrs.getValue("src")) {}
         } catch (e: Exception) {
             AppLog.e(AppLog.T.EDITOR, e)
         }
@@ -1001,6 +1039,10 @@ class AztecEditorActivity : AppCompatActivity(),
             e.printStackTrace()
             null
         }
+    }
+
+    private fun correctVideoTags(html: String): String {
+        return html.replace(videoRegex, """<video src="$1"></video>""")
     }
     // endregion
 }

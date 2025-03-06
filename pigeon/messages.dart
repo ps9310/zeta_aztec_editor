@@ -6,8 +6,8 @@ import 'package:pigeon/pigeon.dart';
     dartOut: 'lib/src/messages.g.dart',
     dartOptions: DartOptions(),
     // Kotlin for Android
-    kotlinOut: 'android/src/main/kotlin/com/zebradevs/aztec/editor/Messages.g.kt',
-    kotlinOptions: KotlinOptions(package: 'com.zebradevs.aztec.editor'),
+    kotlinOut: 'android/src/main/kotlin/com/zebradevs/aztec/editor/messages/Messages.g.kt',
+    kotlinOptions: KotlinOptions(package: 'com.zebradevs.aztec.editor.messages'),
     // Swift for iOS
     swiftOut: 'ios/Classes/Messages.g.swift',
     swiftOptions: SwiftOptions(),
@@ -53,8 +53,8 @@ class AztecEditorConfig {
   final String? backgroundColor;
   final String? textColor;
   final String? placeholder;
+  final int? characterLimit;
   final AztecEditorTheme? theme;
-  final List<String>? fileExtensions;
   final List<AztecToolbarOption>? toolbarOptions;
   final Map<String, String>? authHeaders;
 
@@ -62,9 +62,9 @@ class AztecEditorConfig {
     required this.title,
     this.primaryColor,
     this.placeholder,
+    this.characterLimit,
     this.backgroundColor,
     this.textColor,
-    this.fileExtensions,
     this.toolbarOptions,
     this.authHeaders,
     this.theme,
@@ -80,7 +80,7 @@ abstract class AztecEditorApi {
 @FlutterApi()
 abstract class AztecFlutterApi {
   @async
-  String? onFileSelected(String filePath);
-
-  void onFileDeleted(String filePath);
+  String? onAztecFileSelected(String filePath);
+  void onAztecFileDeleted(String filePath);
+  void onAztecHtmlChanged(String data);
 }

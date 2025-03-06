@@ -107,6 +107,7 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
 
   @override
   Future<String?> onAztecFileSelected(String filePath) async {
+    debugPrint('flutter(onAztecFileSelected) : $filePath');
     await Future.delayed(const Duration(seconds: 1));
     return 'https://picsum.photos/id/237/900/1200'; // upload success
     // return null; // upload failed
@@ -114,6 +115,11 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
 
   @override
   void onAztecFileDeleted(String filePath) {
-    // Delete the file from the server
+    debugPrint('flutter(onAztecFileDeleted) : $filePath');
+  }
+
+  @override
+  void onAztecHtmlChanged(String data) {
+    debugPrint('flutter(onAztecHtmlChanged) : $data');
   }
 }

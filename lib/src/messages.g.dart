@@ -54,8 +54,8 @@ class AztecEditorConfig {
     this.backgroundColor,
     this.textColor,
     this.placeholder,
+    this.characterLimit,
     this.theme,
-    this.fileExtensions,
     this.toolbarOptions,
     this.authHeaders,
   });
@@ -70,9 +70,9 @@ class AztecEditorConfig {
 
   String? placeholder;
 
-  AztecEditorTheme? theme;
+  int? characterLimit;
 
-  List<String>? fileExtensions;
+  AztecEditorTheme? theme;
 
   List<AztecToolbarOption>? toolbarOptions;
 
@@ -85,8 +85,8 @@ class AztecEditorConfig {
       backgroundColor,
       textColor,
       placeholder,
+      characterLimit,
       theme,
-      fileExtensions,
       toolbarOptions,
       authHeaders,
     ];
@@ -100,8 +100,8 @@ class AztecEditorConfig {
       backgroundColor: result[2] as String?,
       textColor: result[3] as String?,
       placeholder: result[4] as String?,
-      theme: result[5] as AztecEditorTheme?,
-      fileExtensions: (result[6] as List<Object?>?)?.cast<String>(),
+      characterLimit: result[5] as int?,
+      theme: result[6] as AztecEditorTheme?,
       toolbarOptions: (result[7] as List<Object?>?)?.cast<AztecToolbarOption>(),
       authHeaders: (result[8] as Map<Object?, Object?>?)?.cast<String, String>(),
     );
@@ -187,28 +187,30 @@ class AztecEditorApi {
 abstract class AztecFlutterApi {
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
 
-  Future<String?> onFileSelected(String filePath);
+  Future<String?> onAztecFileSelected(String filePath);
 
-  void onFileDeleted(String filePath);
+  void onAztecFileDeleted(String filePath);
+
+  void onAztecHtmlChanged(String data);
 
   static void setUp(AztecFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
     messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
     {
       final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
-          'dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected$messageChannelSuffix', pigeonChannelCodec,
+          'dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecFileSelected$messageChannelSuffix', pigeonChannelCodec,
           binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
           assert(message != null,
-          'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected was null.');
+          'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecFileSelected was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_filePath = (args[0] as String?);
           assert(arg_filePath != null,
-              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileSelected was null, expected non-null String.');
+              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecFileSelected was null, expected non-null String.');
           try {
-            final String? output = await api.onFileSelected(arg_filePath!);
+            final String? output = await api.onAztecFileSelected(arg_filePath!);
             return wrapResponse(result: output);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
@@ -220,20 +222,45 @@ abstract class AztecFlutterApi {
     }
     {
       final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
-          'dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted$messageChannelSuffix', pigeonChannelCodec,
+          'dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecFileDeleted$messageChannelSuffix', pigeonChannelCodec,
           binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
           assert(message != null,
-          'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted was null.');
+          'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecFileDeleted was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_filePath = (args[0] as String?);
           assert(arg_filePath != null,
-              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onFileDeleted was null, expected non-null String.');
+              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecFileDeleted was null, expected non-null String.');
           try {
-            api.onFileDeleted(arg_filePath!);
+            api.onAztecFileDeleted(arg_filePath!);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecHtmlChanged$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecHtmlChanged was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final String? arg_data = (args[0] as String?);
+          assert(arg_data != null,
+              'Argument for dev.flutter.pigeon.zeta_aztec_editor.AztecFlutterApi.onAztecHtmlChanged was null, expected non-null String.');
+          try {
+            api.onAztecHtmlChanged(arg_data!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);

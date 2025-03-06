@@ -11,6 +11,11 @@ enum EditorDemoControllerError : Error {
 
 class AztecEditorController: UIViewController {
     
+    // Define your debounce delay (in seconds)
+    private let debounceDelay: TimeInterval = 0.3
+    // Timer to schedule the debounce update
+    private var debounceTimer: Timer?
+    
     fileprivate(set) lazy var formatBar: Aztec.FormatBar = {
         return self.createToolbar()
     }()
@@ -31,7 +36,7 @@ class AztecEditorController: UIViewController {
         
         inserter.uploadCallback = { fileURL, completion in
             // Call your onFileSelected function with the editor token and file path.
-            AztecFlutterContainer.shared.flutterApi?.onFileSelected(filePath: fileURL.path) { result in
+            AztecFlutterContainer.shared.flutterApi?.onAztecFileSelected(filePath: fileURL.path) { result in
                 // When the upload finishes, invoke the completion closure.
                 completion(result)
             }
@@ -57,7 +62,6 @@ class AztecEditorController: UIViewController {
             defaultParagraphStyle: .default,
             defaultMissingImage: Constants.defaultMissingImage
         )
-        
         
         editorView.clipsToBounds = false
         
@@ -98,6 +102,30 @@ class AztecEditorController: UIViewController {
     let initialHtml: String?;
     let config: AztecEditorConfig;
     let completion: (Result<String?, any Error>) -> Void
+    
+    // 3) Undo button with image + optional text
+    private lazy var undoButton = UIBarButtonItem(
+        image: UIImage(systemName: "arrow.uturn.backward"), // iOS 15+ symbol for “undo”
+        style: .plain,
+        target: self,
+        action: #selector(undoAction)
+    )
+    
+    // 4) Redo button with image + optional text
+    private lazy var redoButton = UIBarButtonItem(
+        image: UIImage(systemName: "arrow.uturn.forward"), // iOS 15+ symbol for “redo”
+        style: .plain,
+        target: self,
+        action: #selector(redoAction)
+    )
+    
+    // 4) Redo button with image + optional text
+    private lazy var doneButton = UIBarButtonItem(
+        title: "DONE",
+        style: .done,
+        target: self,
+        action: #selector(doneAction)
+    )
     
     private lazy var optionsTablePresenter = OptionsTablePresenter(presentingViewController: self, presentingTextView: richTextView)
     
@@ -140,29 +168,6 @@ class AztecEditorController: UIViewController {
         titleLabel.sizeToFit()
         let titleItem = UIBarButtonItem(customView: titleLabel)
         
-        // 3) Undo button with image + optional text
-        let undoButton = UIBarButtonItem(
-            image: UIImage(systemName: "arrow.uturn.backward"), // iOS 15+ symbol for “undo”
-            style: .plain,
-            target: self,
-            action: #selector(undoAction)
-        )
-        
-        // 4) Redo button with image + optional text
-        let redoButton = UIBarButtonItem(
-            image: UIImage(systemName: "arrow.uturn.forward"), // iOS 15+ symbol for “redo”
-            style: .plain,
-            target: self,
-            action: #selector(redoAction)
-        )
-        
-        // 4) Redo button with image + optional text
-        let doneButton = UIBarButtonItem(
-            title: "DONE",
-            style: .done,
-            target: self,
-            action: #selector(doneAction)
-        )
         
         // 5) Assign them all to the left side
         navigationItem.leftBarButtonItems = [backButton, titleItem]
@@ -211,6 +216,11 @@ class AztecEditorController: UIViewController {
         editorView.becomeFirstResponder()
     }
     
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        debounceTimer?.invalidate()
+    }
+    
     // MARK: - Navigation Bar Button Actions
     
     @objc func undoAction() {
@@ -223,9 +233,7 @@ class AztecEditorController: UIViewController {
     
     @objc func doneAction() {
         view.endEditing(true)
-        let html = correctUnorderedList(richTextView.getHTML())
-        print(html)
-        completion(.success(html))
+        completion(.success(correctUnorderedList(richTextView.getHTML())))
         dismiss(animated: true)
     }
     
@@ -233,6 +241,19 @@ class AztecEditorController: UIViewController {
         view.endEditing(true)
         completion(.failure(EditorDemoControllerError.cancelled))
         dismiss(animated: true, completion: nil)
+    }
+    
+    func sendUpdateToFlutter() {
+        // Invalidate any previous timer
+        debounceTimer?.invalidate()
+        
+        // Schedule a new timer for the debounce delay
+        debounceTimer = Timer.scheduledTimer(withTimeInterval: debounceDelay, repeats: false) { [weak self] _ in
+            guard let self = self else { return }
+            let htmlContent = correctUnorderedList(richTextView.getHTML())
+            AztecFlutterContainer.shared.flutterApi?.onAztecHtmlChanged(data: htmlContent) { _ in
+            }
+        }
     }
     
     func correctUnorderedList(_ html: String) -> String {
@@ -453,6 +474,9 @@ class AztecEditorController: UIViewController {
     }
     
     func updateFormatBar() {
+        undoButton.isEnabled = richTextView.undoManager?.canUndo ?? false
+        redoButton.isEnabled = richTextView.undoManager?.canRedo ?? false
+        
         guard let toolbar = richTextView.inputAccessoryView as? Aztec.FormatBar else {
             return
         }
@@ -512,6 +536,7 @@ extension AztecEditorController : UITextViewDelegate {
         switch textView {
             case richTextView:
                 updateFormatBar()
+                sendUpdateToFlutter()
             default:
                 break
         }

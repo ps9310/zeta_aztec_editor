@@ -4,8 +4,8 @@ export 'src/messages.g.dart' hide AztecEditorApi, AztecFlutterApi;
 
 abstract class ZetaAztecEditorCallbacks {
   Future<String?> onAztecFileSelected(String filePath);
-
   void onAztecFileDeleted(String filePath);
+  void onAztecHtmlChanged(String data);
 }
 
 class ZetaAztecEditor implements AztecFlutterApi {
@@ -40,12 +40,17 @@ class ZetaAztecEditor implements AztecFlutterApi {
   }
 
   @override
-  Future<String?> onFileSelected(String filePath) {
+  Future<String?> onAztecFileSelected(String filePath) {
     return _callbacks?.onAztecFileSelected(filePath) ?? Future.value(null);
   }
 
   @override
-  void onFileDeleted(String filePath) {
+  void onAztecFileDeleted(String filePath) {
     _callbacks?.onAztecFileDeleted(filePath);
+  }
+
+  @override
+  void onAztecHtmlChanged(String data) {
+    _callbacks?.onAztecHtmlChanged(data);
   }
 }
