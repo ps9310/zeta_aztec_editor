@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -25,6 +26,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.PopupMenu
 import android.widget.ToggleButton
 import androidx.activity.OnBackPressedCallback
@@ -892,7 +894,8 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // region Media Tap & Info Callbacks
     override fun onImageTapped(attrs: AztecAttributes, naturalWidth: Int, naturalHeight: Int) {
-        ToastUtils.showToast(this, "Image tapped!")
+        val url = attrs.getValue("src")
+        url?.let { showDeleteConfirmation(it) }
     }
 
     override fun onVideoTapped(attrs: AztecAttributes) {
@@ -901,54 +904,14 @@ class AztecEditorActivity : AppCompatActivity(),
         else
             attrs.getValue("src")
 
-        url?.let {
-            try {
-                Intent(Intent.ACTION_VIEW, Uri.parse(it)).apply {
-                    setDataAndType(Uri.parse(it), "video/*")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }.also { intent -> startActivity(intent) }
-            } catch (e: ActivityNotFoundException) {
-                try {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
-                } catch (e: ActivityNotFoundException) {
-                    ToastUtils.showToast(this, "Video tapped!")
-                }
-            }
-        }
+        url?.let { showDeleteConfirmation(it) }
     }
 
-    override fun onVideoInfoRequested(attrs: AztecAttributes) {
-        if (attrs.hasAttribute(ATTRIBUTE_VIDEOPRESS_HIDDEN_ID)) {
-            AppLog.d(
-                AppLog.T.EDITOR, "Video Info Requested for shortcode " +
-                        attrs.getValue(ATTRIBUTE_VIDEOPRESS_HIDDEN_ID)
-            )
-            aztec.visualEditor.postDelayed({
-                aztec.visualEditor.updateVideoPressThumb(
-                    "https://videos.files.wordpress.com/OcobLTqC/img_5786_hd.original.jpg",
-                    "https://videos.files.wordpress.com/OcobLTqC/img_5786.m4v",
-                    attrs.getValue(ATTRIBUTE_VIDEOPRESS_HIDDEN_ID)
-                )
-            }, 500)
-        }
-    }
+    override fun onVideoInfoRequested(attrs: AztecAttributes) {}
 
     override fun onAudioTapped(attrs: AztecAttributes) {
         val url = attrs.getValue("src")
-        url?.let {
-            try {
-                Intent(Intent.ACTION_VIEW, Uri.parse(it)).apply {
-                    setDataAndType(Uri.parse(it), "audio/*")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }.also { intent -> startActivity(intent) }
-            } catch (e: ActivityNotFoundException) {
-                try {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it)))
-                } catch (e: ActivityNotFoundException) {
-                    ToastUtils.showToast(this, "Audio tapped!")
-                }
-            }
-        }
+        url?.let { showDeleteConfirmation(it) }
     }
 
     override fun onMediaDeleted(attrs: AztecAttributes) {
@@ -956,6 +919,30 @@ class AztecEditorActivity : AppCompatActivity(),
             AztecFlutterContainer.flutterApi?.onAztecFileDeleted(attrs.getValue("src")) {}
         } catch (e: Exception) {
             AppLog.e(AppLog.T.EDITOR, e)
+        }
+    }
+
+    // This method displays a confirmation dialog with "Delete" and "Cancel" options.
+    private fun showDeleteConfirmation(url: String) {
+        Handler(Looper.getMainLooper()).postDelayed({
+            hideKeyboard(aztec.visualEditor)
+
+            AlertDialog.Builder(this)
+                .setTitle("Confirm Deletion")
+                .setMessage("Are you sure you want to delete this media? This action cannot be undone.")
+                .setPositiveButton("Delete") { _, _ ->
+                    deleteMedia(url)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+
+        }, 100)
+    }
+
+    // Stub function to handle media deletion logic.
+    private fun deleteMedia(url: String) {
+        aztec.visualEditor.removeMedia { attrs ->
+            attrs.getValue("src") == url
         }
     }
     // endregion
@@ -1013,4 +1000,9 @@ class AztecEditorActivity : AppCompatActivity(),
         return html.replace(videoRegex, """<video src="$1"></video>""")
     }
     // endregion
+}
+
+fun Context.hideKeyboard(view: View) {
+    val imm = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+    imm.hideSoftInputFromWindow(view.windowToken, 0)
 }
