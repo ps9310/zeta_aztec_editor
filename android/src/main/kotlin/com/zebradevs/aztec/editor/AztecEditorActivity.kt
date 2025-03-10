@@ -134,13 +134,13 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // region Lifecycle & Setup
     override fun onCreate(savedInstanceState: Bundle?) {
-        setupThemeAndToolbar()
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_aztec_editor)
-
         IntentCompat.getParcelableExtra(intent, "editorConfig", EditorConfig::class.java)?.let {
             editorConfig = it
         }
+
+        setupThemeAndToolbar()
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_aztec_editor)
 
         setupBackPressHandler()
         setupEditorConfiguration()
