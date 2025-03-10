@@ -1,4 +1,4 @@
-package com.zebradevs.aztec.editor.activity
+package com.zebradevs.aztec.editor
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -7,13 +7,9 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -23,7 +19,6 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Gravity
 import android.view.Menu
@@ -31,7 +26,6 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.widget.PopupMenu
-import android.widget.ProgressBar
 import android.widget.ToggleButton
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.ActivityResultLauncher
@@ -46,25 +40,16 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
 import androidx.core.view.forEach
-import com.zebradevs.aztec.editor.AztecFlutterContainer
 import com.zebradevs.aztec.editor.EditorConfig
-import com.zebradevs.aztec.editor.R
 import com.zebradevs.aztec.editor.messages.AztecEditorTheme
 import com.zebradevs.aztec.editor.messages.AztecToolbarOption
-import com.zebradevs.aztec.editor.toolbar.MediaToolbarImageButton
-import com.zebradevs.aztec.editor.toolbar.MediaToolbarVideoButton
-import com.zebradevs.aztec.editor.utils.GlideVideoThumbnailLoader
-import com.zebradevs.aztec.editor.utils.ZGlideImageLoader
-import com.zebradevs.aztec.editor.utils.videoRegex
 import org.wordpress.android.util.AppLog
-import org.wordpress.android.util.ImageUtils
 import org.wordpress.android.util.PermissionUtils
 import org.wordpress.android.util.ToastUtils
 import org.wordpress.aztec.Aztec
 import org.wordpress.aztec.AztecAttributes
 import org.wordpress.aztec.AztecExceptionHandler
 import org.wordpress.aztec.AztecText
-import org.wordpress.aztec.Html
 import org.wordpress.aztec.IHistoryListener
 import org.wordpress.aztec.ITextFormat
 import org.wordpress.aztec.plugins.CssUnderlinePlugin
@@ -84,8 +69,9 @@ import org.wordpress.aztec.toolbar.ToolbarItems
 import org.xml.sax.Attributes
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.Random
-
 
 class AztecEditorActivity : AppCompatActivity(),
     AztecText.OnImeBackListener,
@@ -272,7 +258,8 @@ class AztecEditorActivity : AppCompatActivity(),
         val appBarColor = if (isDarkMode) Color.BLACK else Color.WHITE
         val appBarTextColor = if (isDarkMode) Color.WHITE else Color.BLACK
         val visualEditor = findViewById<AztecText>(R.id.aztec)
-        val aztecToolbar = findViewById<AztecToolbar>(R.id.formatting_toolbar)
+        val aztecToolbar =
+            findViewById<AztecToolbar>(R.id.formatting_toolbar)
         val topToolbar = findViewById<Toolbar>(R.id.top_toolbar)
 
         val toolbarOptions = availableToolbarOptions()
@@ -295,7 +282,8 @@ class AztecEditorActivity : AppCompatActivity(),
         visualEditor.enableSamsungPredictiveBehaviorOverride()
         visualEditor.setBackgroundColor(appBarColor)
         visualEditor.setTextAppearance(android.R.style.TextAppearance)
-        visualEditor.hint = editorConfig?.placeholder ?: getString(R.string.edit_hint)
+        visualEditor.hint =
+            editorConfig?.placeholder ?: getString(R.string.edit_hint)
 
         val toolbarActions = availableToolbarOptions().mapNotNull { toAztecOption(it) }.toSet()
         aztecToolbar.setBackgroundColor(appBarColor)
@@ -331,7 +319,7 @@ class AztecEditorActivity : AppCompatActivity(),
                     override fun onClick(view: View) {
                         mediaMenu = PopupMenu(this@AztecEditorActivity, view).apply {
                             setOnMenuItemClickListener(this@AztecEditorActivity)
-                            inflate(R.menu.menu_image)
+                            inflate(R.menu.aztec_menu_image)
                             show()
                         }
                         if (view is ToggleButton) view.isChecked = false
@@ -347,7 +335,7 @@ class AztecEditorActivity : AppCompatActivity(),
                     override fun onClick(view: View) {
                         mediaMenu = PopupMenu(this@AztecEditorActivity, view).apply {
                             setOnMenuItemClickListener(this@AztecEditorActivity)
-                            inflate(R.menu.menu_video)
+                            inflate(R.menu.aztec_menu_video)
                             show()
                         }
                         if (view is ToggleButton) view.isChecked = false
@@ -382,8 +370,10 @@ class AztecEditorActivity : AppCompatActivity(),
                     // Create a new Runnable to send the update after the debounce delay
                     debounceRunnable = Runnable {
                         val htmlContent = correctVideoTags(aztec.visualEditor.toHtml())
-                        AztecFlutterContainer.flutterApi?.onAztecHtmlChanged(htmlContent) {
-                            Log.d("AztecEditorActivity", "HTML > flutter : $htmlContent")
+                        runOnUiThread {
+                            AztecFlutterContainer.flutterApi?.onAztecHtmlChanged(htmlContent) {
+                                Log.d("AztecEditorActivity", "HTML > flutter : $htmlContent")
+                            }
                         }
                     }
                     // Post the runnable with the debounce delay
@@ -402,7 +392,8 @@ class AztecEditorActivity : AppCompatActivity(),
         val toolbarActions = availableToolbarOptions.mapNotNull { toAztecOption(it) }.toSet()
 
         val stateList = AppCompatResources.getColorStateList(
-            this@AztecEditorActivity, R.color.toolbar_button_tint_selector
+            this@AztecEditorActivity,
+            R.color.toolbar_button_tint_selector
         )
 
         // Set the color state list for each toolbar button and hide/show them based on the options
@@ -419,7 +410,10 @@ class AztecEditorActivity : AppCompatActivity(),
                 || availableToolbarOptions.contains(AztecToolbarOption.VIDEO)
             ) {
                 it.setBackgroundColor(
-                    ContextCompat.getColor(this, R.color.aztec_toolbar_border)
+                    ContextCompat.getColor(
+                        this,
+                        R.color.aztec_toolbar_border
+                    )
                 )
                 it.visibility = View.VISIBLE
             } else {
@@ -469,12 +463,9 @@ class AztecEditorActivity : AppCompatActivity(),
                         input.copyTo(output)
                     }
                 }
-                // Update mediaPath to point to the file in internal storage.
+
                 mediaPath = destinationFile.absolutePath
-                val options =
-                    BitmapFactory.Options().apply { inDensity = DisplayMetrics.DENSITY_DEFAULT }
-                val bitmap = BitmapFactory.decodeFile(mediaPath, options)
-                insertImageAndSimulateUpload(bitmap, mediaPath)
+                insertImageAndSimulateUpload(destinationFile.absolutePath)
             } catch (e: Exception) {
                 e.printStackTrace()
                 ToastUtils.showToast(this, "Failed to copy image to internal storage!")
@@ -484,19 +475,11 @@ class AztecEditorActivity : AppCompatActivity(),
 
     private fun handleGalleryPhotoResult(data: Intent?) {
         data?.data?.let { uri ->
-            // Copy the file to internal storage.
             val newFileName = "IMG_${System.currentTimeMillis()}.jpg"
             val internalPath = copyFileToInternalStorage(uri, newFileName)
             if (internalPath != null) {
                 mediaPath = internalPath
-                // Instead of using contentResolver, open via FileInputStream.
-                val file = File(mediaPath)
-                if (file.exists()) {
-                    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                    insertImageAndSimulateUpload(bitmap, mediaPath)
-                } else {
-                    ToastUtils.showToast(this, "File not found in internal storage!")
-                }
+                insertImageAndSimulateUpload(internalPath)
             } else {
                 ToastUtils.showToast(this, "Failed to copy image to internal storage!")
             }
@@ -509,53 +492,29 @@ class AztecEditorActivity : AppCompatActivity(),
             val internalPath = copyFileToInternalStorage(uri, newFileName)
             if (internalPath != null) {
                 mediaPath = internalPath
-                createVideoThumbnailAndUpload()
+                insertVideoAndSimulateUpload(internalPath)
             } else {
                 ToastUtils.showToast(this, "Failed to copy video to internal storage!")
             }
         }
     }
 
-    private fun createVideoThumbnailAndUpload() {
-        aztec.visualEditor.videoThumbnailGetter?.loadVideoThumbnail(
+    private fun insertImageAndSimulateUpload(mediaPath: String) {
+        val thumbnail = ZThumbnailUtils.getImageThumbnail(
             mediaPath,
-            object : Html.VideoThumbnailGetter.Callbacks {
-                override fun onThumbnailFailed() {}
-                override fun onThumbnailLoaded(drawable: Drawable?) {
-                    drawable?.let {
-                        val bitmap = Bitmap.createBitmap(
-                            it.intrinsicWidth, it.intrinsicHeight, Bitmap.Config.ARGB_8888
-                        )
-                        Canvas(bitmap).apply {
-                            it.setBounds(0, 0, width, height)
-                            it.draw(this)
-                        }
-                        insertVideoAndSimulateUpload(bitmap, mediaPath)
-                    }
-                }
-
-                override fun onThumbnailLoading(drawable: Drawable?) {}
-            },
-            resources.displayMetrics.widthPixels
+            maxWidth = aztec.visualEditor.maxWidth
         )
-    }
 
-    private fun insertImageAndSimulateUpload(bitmap: Bitmap?, mediaPath: String) {
-        val bitmapResized = ImageUtils.getScaledBitmapAtLongestSide(
-            bitmap, aztec.visualEditor.maxWidth
-        )
         val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = false)
-        aztec.visualEditor.insertImage(BitmapDrawable(resources, bitmapResized), attrs)
+        aztec.visualEditor.insertImage(BitmapDrawable(resources, thumbnail), attrs)
         simulateMediaUpload(id, attrs)  // simulates upload progress and updates overlays
         aztec.toolbar.toggleMediaToolbar()
     }
 
-    fun insertVideoAndSimulateUpload(bitmap: Bitmap?, mediaPath: String) {
-        val bitmapResized = ImageUtils.getScaledBitmapAtLongestSide(
-            bitmap, aztec.visualEditor.maxWidth
-        )
+    private fun insertVideoAndSimulateUpload(mediaPath: String) {
+        val thumbnail = ZThumbnailUtils.getVideoThumbnail(mediaPath)
         val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = true)
-        aztec.visualEditor.insertVideo(BitmapDrawable(resources, bitmapResized), attrs)
+        aztec.visualEditor.insertVideo(BitmapDrawable(resources, thumbnail), attrs)
         simulateMediaUpload(id, attrs)
         aztec.toolbar.toggleMediaToolbar()
     }
@@ -731,7 +690,10 @@ class AztecEditorActivity : AppCompatActivity(),
                             (grantResults[i] == PackageManager.PERMISSION_DENIED)
                 }
                 if (isPermissionDenied) {
-                    ToastUtils.showToast(this, getString(R.string.permission_required_media_camera))
+                    ToastUtils.showToast(
+                        this,
+                        getString(R.string.permission_required_media_camera)
+                    )
                 } else {
                     when (requestCode) {
                         MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE -> onCameraPhotoMediaOptionSelected()
@@ -749,7 +711,8 @@ class AztecEditorActivity : AppCompatActivity(),
                     MEDIA_PHOTOS_PERMISSION_REQUEST_CODE -> {
                         if (isPermissionDenied) {
                             ToastUtils.showToast(
-                                this, getString(R.string.permission_required_media_photos)
+                                this,
+                                getString(R.string.permission_required_media_photos)
                             )
                         } else {
                             onPhotosMediaOptionSelected()
@@ -759,7 +722,8 @@ class AztecEditorActivity : AppCompatActivity(),
                     MEDIA_VIDEOS_PERMISSION_REQUEST_CODE -> {
                         if (isPermissionDenied) {
                             ToastUtils.showToast(
-                                this, getString(R.string.permission_required_media_videos)
+                                this,
+                                getString(R.string.permission_required_media_videos)
                             )
                         } else {
                             onVideosMediaOptionSelected()
@@ -812,7 +776,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // region Options Menu & Toolbar Callbacks
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
+        menuInflater.inflate(R.menu.aztec_menu_main, menu)
         val menuIconColor = if (isDarkMode()) Color.WHITE else Color.BLACK
         menu.forEach { it.icon?.setTint(menuIconColor) }
         return super.onCreateOptionsMenu(menu)
@@ -843,8 +807,10 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        menu?.findItem(R.id.redo)?.isEnabled = aztec.visualEditor.history.redoValid()
-        menu?.findItem(R.id.undo)?.isEnabled = aztec.visualEditor.history.undoValid()
+        menu?.findItem(R.id.redo)?.isEnabled =
+            aztec.visualEditor.history.redoValid()
+        menu?.findItem(R.id.undo)?.isEnabled =
+            aztec.visualEditor.history.undoValid()
         return super.onPrepareOptionsMenu(menu)
     }
 
@@ -1009,35 +975,37 @@ class AztecEditorActivity : AppCompatActivity(),
     private fun showMediaProgressBar() {
         AlertDialog.Builder(this)
             .setCancelable(false)
-            .setTitle("Uploading...")
-            .setView(ProgressBar(this))
+            .setView(R.layout.aztec_progress_dialog)
             .create()
             .also {
                 it.show()
+                it.window?.setGravity(Gravity.CENTER)
                 mediaProgressDialog = it
             }
     }
 
     private fun copyFileToInternalStorage(sourceUri: Uri, newFileName: String): String? {
+        var inputStream: InputStream? = null
+        var outputStream: OutputStream? = null
         return try {
             // Open the source input stream
-            val inputStream = contentResolver.openInputStream(sourceUri) ?: return null
+            inputStream = contentResolver.openInputStream(sourceUri) ?: return null
 
             // Create a file in internal storage
             val outputFile = File(filesDir, newFileName)
-            val outputStream = FileOutputStream(outputFile)
+            outputStream = FileOutputStream(outputFile)
 
             // Copy the contents from the source to the destination
             inputStream.copyTo(outputStream)
-
-            inputStream.close()
-            outputStream.close()
 
             // Return the absolute path of the copied file
             outputFile.absolutePath
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        } finally {
+            inputStream?.close()
+            outputStream?.close()
         }
     }
 

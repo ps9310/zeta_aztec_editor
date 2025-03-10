@@ -1,4 +1,4 @@
-package com.zebradevs.aztec.editor.utils
+package com.zebradevs.aztec.editor
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -6,6 +6,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.request.Request
@@ -42,6 +43,8 @@ class ZGlideImageLoader(
         Glide.with(context)
             .asBitmap()
             .load(glideUrl)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .skipMemoryCache(false)
             .into(object : Target<Bitmap> {
                 override fun onLoadStarted(placeholder: Drawable?) {
                     callbacks.onImageLoading(placeholder)
@@ -90,11 +93,4 @@ class ZGlideImageLoader(
                 override fun onDestroy() {}
             })
     }
-}
-
-// Extension function for upscaling the bitmap if needed
-fun Bitmap.upscaleTo(minWidth: Int): Bitmap {
-    val scale = minWidth.toFloat() / this.width
-    val newHeight = (this.height * scale).toInt()
-    return Bitmap.createScaledBitmap(this, minWidth, newHeight, true)
 }

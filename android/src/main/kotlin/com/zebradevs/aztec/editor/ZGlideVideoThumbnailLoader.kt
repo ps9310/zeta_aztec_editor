@@ -1,4 +1,4 @@
-package com.zebradevs.aztec.editor.utils
+package com.zebradevs.aztec.editor
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -6,6 +6,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.request.Request
@@ -51,6 +52,8 @@ class GlideVideoThumbnailLoader(
             .asBitmap()
             .load(glideModel)
             .fitCenter()
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .skipMemoryCache(false)
             .into(object : Target<Bitmap> {
                 override fun onLoadStarted(placeholder: Drawable?) {
                     callbacks.onThumbnailLoading(placeholder)

@@ -15,4 +15,5 @@
     <string name="permission_required_media_videos">Storage permission required to access videos</string>
     <string name="camera">Camera</string>
     <string name="gallery">Gallery</string>
+    <string name="uploading">Uploading…</string>
 </resources>

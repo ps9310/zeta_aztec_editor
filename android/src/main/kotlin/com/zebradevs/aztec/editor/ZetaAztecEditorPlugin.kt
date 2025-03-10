@@ -2,11 +2,9 @@ package com.zebradevs.aztec.editor
 
 import android.app.Activity
 import android.content.Intent
-import com.zebradevs.aztec.editor.activity.AztecEditorActivity
 import com.zebradevs.aztec.editor.messages.AztecEditorApi
 import com.zebradevs.aztec.editor.messages.AztecEditorConfig
 import com.zebradevs.aztec.editor.messages.AztecFlutterApi
-import com.zebradevs.aztec.editor.utils.runOnUi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -19,7 +17,10 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     private var activity: Activity? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        AztecFlutterContainer.flutterApi = AztecFlutterApi(flutterPluginBinding.binaryMessenger)
+        if (AztecFlutterContainer.flutterApi == null) {
+            AztecFlutterContainer.flutterApi = AztecFlutterApi(flutterPluginBinding.binaryMessenger)
+        }
+
         AztecEditorApi.setUp(
             binaryMessenger = flutterPluginBinding.binaryMessenger,
             api = this

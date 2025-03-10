@@ -5,7 +5,9 @@ public class ZetaAztecEditorPlugin: NSObject, FlutterPlugin, AztecEditorApi {
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         AztecEditorApiSetup.setUp(binaryMessenger: registrar.messenger(), api: ZetaAztecEditorPlugin())
-        AztecFlutterContainer.shared.flutterApi = AztecFlutterApi(binaryMessenger: registrar.messenger())
+        if AztecFlutterContainer.shared.flutterApi == nil {
+            AztecFlutterContainer.shared.flutterApi = AztecFlutterApi(binaryMessenger: registrar.messenger())
+        }
     }
     
     func launch(

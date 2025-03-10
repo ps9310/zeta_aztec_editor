@@ -1,3 +1,3 @@
-package com.zebradevs.aztec.editor.utils
+package com.zebradevs.aztec.editor
 
 val videoRegex = """\[video[^]]*src\s*=\s*["']([^"']+)["'][^]]*]""".toRegex()

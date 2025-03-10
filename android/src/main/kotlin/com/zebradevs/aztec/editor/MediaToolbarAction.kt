@@ -1,6 +1,5 @@
-package com.zebradevs.aztec.editor.toolbar
+package com.zebradevs.aztec.editor
 
-import com.zebradevs.aztec.editor.R
 import org.wordpress.aztec.AztecTextFormat
 import org.wordpress.aztec.ITextFormat
 import org.wordpress.aztec.toolbar.IToolbarAction
