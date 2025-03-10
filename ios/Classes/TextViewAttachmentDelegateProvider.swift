@@ -250,25 +250,47 @@ extension TextViewAttachmentDelegateProvider {
         let title: String = NSLocalizedString("Media Options", comment: "Title for action sheet with media options.")
         let message: String? = nil
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .actionSheet)
+        
         let dismissAction = UIAlertAction(
             title: NSLocalizedString("Dismiss", comment: "User action to dismiss media options."),
             style: .cancel,
             handler: { [weak self] _ in
                 self?.resetMediaAttachmentOverlay(attachment)
                 textView.refresh(attachment)
-            })
-        
+            }
+        )
         alertController.addAction(dismissAction)
-
+        
         let removeAction = UIAlertAction(
             title: NSLocalizedString("Remove Media", comment: "User action to remove media."),
             style: .destructive,
-            handler: { _ in
-                textView.remove(attachmentID: mediaID)
+            handler: { [weak self] _ in
+                guard let self = self else { return }
+                // Show confirmation alert before deletion.
+                let confirmationAlert = UIAlertController(
+                    title: NSLocalizedString("Confirm Deletion", comment: "Title for deletion confirmation alert."),
+                    message: NSLocalizedString("Are you sure you want to delete this media? This action cannot be undone.", comment: "Deletion confirmation message."),
+                    preferredStyle: .alert
+                )
+                let confirmAction = UIAlertAction(
+                    title: NSLocalizedString("Delete", comment: "Confirm deletion."),
+                    style: .destructive,
+                    handler: { _ in
+                        textView.remove(attachmentID: mediaID)
+                    }
+                )
+                let cancelAction = UIAlertAction(
+                    title: NSLocalizedString("Cancel", comment: "Cancel deletion."),
+                    style: .cancel,
+                    handler: nil
+                )
+                confirmationAlert.addAction(confirmAction)
+                confirmationAlert.addAction(cancelAction)
+                self.baseController.present(confirmationAlert, animated: true, completion: nil)
             }
         )
-        
         alertController.addAction(removeAction)
+        
         alertController.popoverPresentationController?.sourceView = textView
         alertController.popoverPresentationController?.sourceRect = CGRect(origin: position, size: CGSize(width: 1, height: 1))
         alertController.popoverPresentationController?.permittedArrowDirections = .any
