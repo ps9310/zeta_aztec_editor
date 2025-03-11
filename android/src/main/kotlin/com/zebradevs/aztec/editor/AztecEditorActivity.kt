@@ -352,7 +352,12 @@ class AztecEditorActivity : AppCompatActivity(),
 
         aztec.visualEditor.setCalypsoMode(false)
         aztec.sourceEditor?.setCalypsoMode(false)
-        aztec.visualEditor.fromHtml(intent.getStringExtra("initialHtml") ?: "")
+
+        try {
+            aztec.visualEditor.fromHtml(intent.getStringExtra("initialHtml") ?: "")
+        } catch (e: Exception) {
+            Log.e("AztecEditorActivity", "Error loading initial HTML", e)
+        }
 
         aztec.visualEditor.addTextChangedListener(
             object : TextWatcher {
