@@ -247,54 +247,77 @@ private extension TextViewAttachmentDelegateProvider {
 extension TextViewAttachmentDelegateProvider {
     func displayActions(in textView: TextView, forAttachment attachment: MediaAttachment, position: CGPoint) {
         let mediaID = attachment.identifier
-        let title: String = NSLocalizedString("Media Options", comment: "Title for action sheet with media options.")
-        let message: String? = nil
-        let alertController = UIAlertController(title: title, message: message, preferredStyle: .actionSheet)
+        let title = NSLocalizedString("Media Options", comment: "Title for media options")
+        let alertController = UIAlertController(title: title, message: nil, preferredStyle: .actionSheet)
         
-        let dismissAction = UIAlertAction(
-            title: NSLocalizedString("Dismiss", comment: "User action to dismiss media options."),
-            style: .cancel,
-            handler: { [weak self] _ in
-                self?.resetMediaAttachmentOverlay(attachment)
-                textView.refresh(attachment)
-            }
-        )
+        // Dismiss action
+        let dismissAction = UIAlertAction(title: NSLocalizedString("Dismiss", comment: "Dismiss options"), style: .cancel) { _ in
+            self.resetMediaAttachmentOverlay(attachment)
+            textView.refresh(attachment)
+        }
         alertController.addAction(dismissAction)
         
-        let removeAction = UIAlertAction(
-            title: NSLocalizedString("Remove Media", comment: "User action to remove media."),
-            style: .destructive,
-            handler: { [weak self] _ in
-                guard let self = self else { return }
-                // Show confirmation alert before deletion.
-                let confirmationAlert = UIAlertController(
-                    title: NSLocalizedString("Confirm Deletion", comment: "Title for deletion confirmation alert."),
-                    message: NSLocalizedString("Are you sure you want to delete this media? This action cannot be undone.", comment: "Deletion confirmation message."),
-                    preferredStyle: .alert
-                )
-                let confirmAction = UIAlertAction(
-                    title: NSLocalizedString("Delete", comment: "Confirm deletion."),
-                    style: .destructive,
-                    handler: { _ in
-                        textView.remove(attachmentID: mediaID)
-                    }
-                )
-                let cancelAction = UIAlertAction(
-                    title: NSLocalizedString("Cancel", comment: "Cancel deletion."),
-                    style: .cancel,
-                    handler: nil
-                )
-                confirmationAlert.addAction(confirmAction)
-                confirmationAlert.addAction(cancelAction)
-                self.baseController.present(confirmationAlert, animated: true, completion: nil)
-            }
-        )
-        alertController.addAction(removeAction)
+        // "Add new line above" action
+        let addNewLineAbove = UIAlertAction(title: NSLocalizedString("Add new line above", comment: "Insert a new line above"), style: .default) { [weak self] _ in
+            self?.addNewLine(above: true, for: attachment, in: textView)
+        }
+        alertController.addAction(addNewLineAbove)
+        
+        // "Add new line below" action
+        let addNewLineBelow = UIAlertAction(title: NSLocalizedString("Add new line below", comment: "Insert a new line below"), style: .default) { [weak self] _ in
+            self?.addNewLine(above: false, for: attachment, in: textView)
+        }
+        alertController.addAction(addNewLineBelow)
+        
+        // "Remove Media" action with confirmation
+        let deleteAction = UIAlertAction(title: NSLocalizedString("Remove Media", comment: "Delete media"), style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            let confirmAlert = UIAlertController(title: NSLocalizedString("Confirm Deletion", comment: ""),
+                                                 message: NSLocalizedString("Are you sure you want to delete this media?", comment: ""),
+                                                 preferredStyle: .alert)
+            confirmAlert.addAction(UIAlertAction(title: NSLocalizedString("Delete", comment: ""),
+                                                 style: .destructive, handler: { _ in
+                textView.remove(attachmentID: mediaID)
+            }))
+            confirmAlert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""),
+                                                 style: .cancel, handler: nil))
+            self.baseController.present(confirmAlert, animated: true, completion: nil)
+        }
+        alertController.addAction(deleteAction)
         
         alertController.popoverPresentationController?.sourceView = textView
         alertController.popoverPresentationController?.sourceRect = CGRect(origin: position, size: CGSize(width: 1, height: 1))
         alertController.popoverPresentationController?.permittedArrowDirections = .any
         baseController.present(alertController, animated: true, completion: nil)
+    }
+
+    private func addNewLine(above: Bool, for attachment: MediaAttachment, in textView: TextView) {
+        // Obtain a mutable copy of the text view's attributed text.
+        guard let mutableAttributedText = textView.attributedText.mutableCopy() as? NSMutableAttributedString else { return }
+        let fullRange = NSRange(location: 0, length: mutableAttributedText.length)
+        var attachmentRange: NSRange?
+        
+        // Enumerate the text to find the range where this media attachment is located.
+        mutableAttributedText.enumerateAttribute(.attachment, in: fullRange, options: []) { (value, range, stop) in
+            if let mediaAttachment = value as? MediaAttachment,
+               mediaAttachment.identifier == attachment.identifier {
+                attachmentRange = range
+                stop.pointee = true
+            }
+        }
+        
+        // If we found the attachment's range, insert a newline.
+        guard let range = attachmentRange else { return }
+        let newline = NSAttributedString(string: "\n")
+        if above {
+            mutableAttributedText.insert(newline, at: range.location)
+        } else {
+            mutableAttributedText.insert(newline, at: range.location + range.length)
+        }
+        
+        // Update the text view with the new content.
+        textView.attributedText = mutableAttributedText
+        textView.refresh(attachment)
     }
 }
 
