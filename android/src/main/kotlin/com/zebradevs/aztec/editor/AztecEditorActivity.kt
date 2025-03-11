@@ -59,11 +59,10 @@ import org.wordpress.aztec.plugins.IMediaToolbarButton
 import org.wordpress.aztec.plugins.shortcodes.AudioShortcodePlugin
 import org.wordpress.aztec.plugins.shortcodes.CaptionShortcodePlugin
 import org.wordpress.aztec.plugins.shortcodes.VideoShortcodePlugin
-import org.wordpress.aztec.plugins.shortcodes.extensions.ATTRIBUTE_VIDEOPRESS_HIDDEN_ID
 import org.wordpress.aztec.plugins.shortcodes.extensions.ATTRIBUTE_VIDEOPRESS_HIDDEN_SRC
-import org.wordpress.aztec.plugins.shortcodes.extensions.updateVideoPressThumb
 import org.wordpress.aztec.plugins.wpcomments.HiddenGutenbergPlugin
 import org.wordpress.aztec.plugins.wpcomments.WordPressCommentsPlugin
+import org.wordpress.aztec.spans.AztecMediaSpan
 import org.wordpress.aztec.toolbar.AztecToolbar
 import org.wordpress.aztec.toolbar.IAztecToolbarClickListener
 import org.wordpress.aztec.toolbar.ToolbarAction
@@ -578,7 +577,6 @@ class AztecEditorActivity : AppCompatActivity(),
                 attrs.setValue("src", it.getOrNull() ?: "")
                 aztec.visualEditor.updateElementAttributes(predicate, attrs)
             } else {
-                runOnUiThread { ToastUtils.showToast(this, "Media upload failed!") }
                 aztec.visualEditor.clearOverlays(predicate)
                 aztec.visualEditor.removeMedia(predicate)
             }
@@ -586,7 +584,7 @@ class AztecEditorActivity : AppCompatActivity(),
             aztec.visualEditor.refreshText()
             aztec.visualEditor.refreshDrawableState()
         } ?: run {
-            runOnUiThread { ToastUtils.showToast(this, "Media upload failed!") }
+            runOnUiThread { mediaProgressDialog?.dismiss() }
             aztec.visualEditor.clearOverlays(predicate)
             aztec.visualEditor.removeMedia(predicate)
             aztec.visualEditor.refreshText()
@@ -895,7 +893,7 @@ class AztecEditorActivity : AppCompatActivity(),
     // region Media Tap & Info Callbacks
     override fun onImageTapped(attrs: AztecAttributes, naturalWidth: Int, naturalHeight: Int) {
         val url = attrs.getValue("src")
-        url?.let { showDeleteConfirmation(it) }
+        url?.let { showMediaOptions(it) }
     }
 
     override fun onVideoTapped(attrs: AztecAttributes) {
@@ -904,14 +902,14 @@ class AztecEditorActivity : AppCompatActivity(),
         else
             attrs.getValue("src")
 
-        url?.let { showDeleteConfirmation(it) }
+        url?.let { showMediaOptions(it) }
     }
 
     override fun onVideoInfoRequested(attrs: AztecAttributes) {}
 
     override fun onAudioTapped(attrs: AztecAttributes) {
         val url = attrs.getValue("src")
-        url?.let { showDeleteConfirmation(it) }
+        url?.let { showMediaOptions(it) }
     }
 
     override fun onMediaDeleted(attrs: AztecAttributes) {
@@ -922,21 +920,61 @@ class AztecEditorActivity : AppCompatActivity(),
         }
     }
 
-    // This method displays a confirmation dialog with "Delete" and "Cancel" options.
-    private fun showDeleteConfirmation(url: String) {
+    private fun showMediaOptions(url: String) {
+        val options = arrayOf("Add new line above", "Add new line below", "Delete Media", "Cancel")
+        AlertDialog.Builder(this)
+            .setTitle("Media Options")
+            .setItems(options) { dialog, which ->
+                when (which) {
+                    0 -> addNewLine(true, url)
+                    1 -> addNewLine(false, url)
+                    2 -> showDeleteConfirmation(url)
+                    3 -> dialog.dismiss()
+                }
+            }
+            .show()
+
         Handler(Looper.getMainLooper()).postDelayed({
             hideKeyboard(aztec.visualEditor)
-
-            AlertDialog.Builder(this)
-                .setTitle("Confirm Deletion")
-                .setMessage("Are you sure you want to delete this media? This action cannot be undone.")
-                .setPositiveButton("Delete") { _, _ ->
-                    deleteMedia(url)
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-
         }, 100)
+    }
+
+    private fun addNewLine(above: Boolean, url: String) {
+        // Get the editor's editable text.
+        val editableText = aztec.visualEditor.text
+        // Find all AztecMediaSpan instances matching the given URL.
+        val mediaSpans = editableText.getSpans(0, editableText.length, AztecMediaSpan::class.java)
+            .filter { it.attributes.getValue("src") == url }
+
+        // If no media spans were found, you can optionally show a message.
+        if (mediaSpans.isEmpty()) {
+            return
+        }
+
+        // For each matching media span, insert a newline.
+        mediaSpans.forEach { mediaSpan ->
+            val start = editableText.getSpanStart(mediaSpan)
+            val end = editableText.getSpanEnd(mediaSpan)
+            if (above) {
+                // Insert newline before the span.
+                editableText.insert(start, "\n")
+            } else {
+                // Insert newline after the span.
+                editableText.insert(end, "\n")
+            }
+        }
+    }
+
+    // This method displays a confirmation dialog with "Delete" and "Cancel" options.
+    private fun showDeleteConfirmation(url: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Confirm Deletion")
+            .setMessage("Are you sure you want to delete this media? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                deleteMedia(url)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     // Stub function to handle media deletion logic.
