@@ -9,6 +9,7 @@ import com.zebradevs.aztec.editor.messages.AztecFlutterApi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.PluginRegistry.ActivityResultListener
 
 /** ZetaAztecEditorPlugin */
@@ -16,10 +17,11 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
 
     private var pendingResult: ((Result<String>) -> Unit)? = null
     private var activity: Activity? = null
+    private var binaryMessenger: BinaryMessenger? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Log.i("ZetaAztecEditorPlugin", "onAttachedToEngine: Called")
-        AztecFlutterContainer.flutterApi = AztecFlutterApi(flutterPluginBinding.binaryMessenger)
+        binaryMessenger = flutterPluginBinding.binaryMessenger
         AztecEditorApi.setUp(
             binaryMessenger = flutterPluginBinding.binaryMessenger,
             api = this
@@ -28,6 +30,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         Log.i("ZetaAztecEditorPlugin", "onDetachedFromEngine: Called")
+        binaryMessenger = binding.binaryMessenger
         AztecEditorApi.setUp(
             binaryMessenger = binding.binaryMessenger,
             api = null
@@ -82,6 +85,18 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
         callback: (Result<String?>) -> Unit
     ) {
         Log.d("ZetaAztecEditorPlugin", "launch: Called with initialHtml: $initialHtml")
+        if (activity == null) {
+            callback(Result.failure(Exception("Activity is null")))
+            return
+        }
+
+        if (binaryMessenger == null) {
+            callback(Result.failure(Exception("BinaryMessenger is null")))
+            return
+        }
+
+        AztecFlutterContainer.flutterApi = AztecFlutterApi(binaryMessenger!!)
+
         runOnUi {
             activity?.let { activity ->
                 pendingResult = callback

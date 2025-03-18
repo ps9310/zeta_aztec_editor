@@ -15,13 +15,13 @@ class ZetaAztecEditor implements AztecFlutterApi {
 
   static ZetaAztecEditorCallbacks? _callbacks;
 
-  ZetaAztecEditor._() {
-    AztecFlutterApi.setUp(this);
-  }
+  ZetaAztecEditor._();
 
   factory ZetaAztecEditor() {
     return _instance;
   }
+
+  void ensureInitialized() => AztecFlutterApi.setUp(this);
 
   Future<String?> launch({
     String? initialHtml,
@@ -29,6 +29,7 @@ class ZetaAztecEditor implements AztecFlutterApi {
     required ZetaAztecEditorCallbacks callback,
   }) async {
     try {
+      ensureInitialized();
       _callbacks = callback;
       final result = await _api.launch(initialHtml: initialHtml, config: config);
       return result;
