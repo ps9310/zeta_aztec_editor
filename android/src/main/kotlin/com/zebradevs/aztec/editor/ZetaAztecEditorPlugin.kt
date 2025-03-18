@@ -28,7 +28,6 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         Log.i("ZetaAztecEditorPlugin", "onDetachedFromEngine: Called")
-        AztecFlutterContainer.flutterApi = null
         AztecEditorApi.setUp(
             binaryMessenger = binding.binaryMessenger,
             api = null
