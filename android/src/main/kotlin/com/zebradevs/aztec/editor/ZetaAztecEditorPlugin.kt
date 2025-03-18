@@ -58,7 +58,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         Log.d(
-                    "ZetaAztecEditorPlugin",
+            "ZetaAztecEditorPlugin",
             "onActivityResult: Called with requestCode: $requestCode, resultCode: $resultCode"
         )
         if (requestCode == AztecEditorActivity.REQUEST_CODE) {

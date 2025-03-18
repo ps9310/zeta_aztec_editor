@@ -1305,7 +1305,7 @@ class AztecEditorActivity : AppCompatActivity(),
             .show()
 
         Handler(Looper.getMainLooper()).postDelayed({
-            hideKeyboard(aztec.visualEditor)
+            dismissKeyboard(aztec.visualEditor)
         }, 100)
     }
 
@@ -1427,8 +1427,8 @@ class AztecEditorActivity : AppCompatActivity(),
     // endregion
 }
 
-fun Context.hideKeyboard(view: View) {
-    Log.d("AztecEditorActivity", "hideKeyboard: Called")
+fun Context.dismissKeyboard(view: View) {
+    Log.d("AztecEditorActivity", "dismissKeyboard: Called")
     val imm = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
     imm.hideSoftInputFromWindow(view.windowToken, 0)
 }
