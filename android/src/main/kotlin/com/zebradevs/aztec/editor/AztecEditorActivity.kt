@@ -683,7 +683,11 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun simulateMediaUpload(id: String, attrs: AztecAttributes) {
-        Log.i("AztecEditorActivity", "simulateMediaUpload: Started for media id: $id")
+        Log.i(
+            "AztecEditorActivity",
+            "simulateMediaUpload: Started for media id: $id, mediaPath: $mediaPath"
+        )
+
         val predicate = object : AztecText.AttributePredicate {
             override fun matches(attrs: Attributes): Boolean = attrs.getValue("id") == id
         }
@@ -691,9 +695,9 @@ class AztecEditorActivity : AppCompatActivity(),
         // Set initial overlay and progress drawable
         aztec.visualEditor.setOverlay(predicate, 0, ColorDrawable(0x80000000.toInt()), Gravity.FILL)
         aztec.visualEditor.updateElementAttributes(predicate, attrs)
-        val progressDrawable = AppCompatResources.getDrawable(
-            this, android.R.drawable.progress_horizontal
-        )
+
+        val progressDrawable =
+            AppCompatResources.getDrawable(this, android.R.drawable.progress_horizontal)
         progressDrawable?.setBounds(0, 0, 0, 4)
         aztec.visualEditor.setOverlay(
             predicate,
@@ -701,56 +705,108 @@ class AztecEditorActivity : AppCompatActivity(),
             progressDrawable,
             Gravity.FILL_HORIZONTAL or Gravity.TOP
         )
-
         aztec.visualEditor.updateElementAttributes(predicate, attrs)
 
         runOnUiThread {
-            Log.i("AztecEditorActivity", "simulateMediaUpload: Showing media progress bar")
-            showMediaProgressBar()
-        }
-        AztecFlutterContainer.flutterApi?.onAztecFileSelected(mediaPath) {
-            runOnUiThread {
+            if (isFinishing) {
                 Log.i(
                     "AztecEditorActivity",
-                    "simulateMediaUpload: Dismissing media progress dialog"
+                    "simulateMediaUpload: Activity is finishing, skipping showing progress bar"
                 )
-                mediaProgressDialog?.dismiss()
-            }
-            if (it.isSuccess && it.getOrNull()?.isNotEmpty() == true) {
-                Log.i(
-                    "AztecEditorActivity",
-                    "simulateMediaUpload: Upload succeeded for media id: $id"
-                )
-                attrs.removeAttribute(attrs.getIndex("uploading"))
-                aztec.visualEditor.clearOverlays(predicate)
-                val videoIndex = attrs.getIndex("video")
-                if (videoIndex != -1) {
-                    attrs.removeAttribute(videoIndex)
-                    val playDrawable = AppCompatResources.getDrawable(
-                        this@AztecEditorActivity,
-                        android.R.drawable.ic_media_play
-                    )
-                    aztec.visualEditor.setOverlay(predicate, 0, playDrawable, Gravity.CENTER)
-                }
-
-                val index = attrs.getIndex("src")
-                if (index != -1) attrs.removeAttribute(index)
-                attrs.setValue("src", it.getOrNull() ?: "")
-                aztec.visualEditor.updateElementAttributes(predicate, attrs)
             } else {
-                Log.e("AztecEditorActivity", "simulateMediaUpload: Upload failed for media id: $id")
+                Log.i("AztecEditorActivity", "simulateMediaUpload: Showing media progress bar")
+                showMediaProgressBar()
+            }
+        }
+
+        if (AztecFlutterContainer.flutterApi == null) {
+            Log.i("AztecEditorActivity", "simulateMediaUpload: flutterApi is null!")
+        }
+
+        AztecFlutterContainer.flutterApi?.onAztecFileSelected(mediaPath) { result ->
+            Log.i(
+                "AztecEditorActivity",
+                "simulateMediaUpload: Flutter API callback invoked with result: $result"
+            )
+
+            runOnUiThread {
+                if (mediaProgressDialog?.isShowing == true) {
+                    Log.i(
+                        "AztecEditorActivity",
+                        "simulateMediaUpload: Dismissing media progress dialog"
+                    )
+                    mediaProgressDialog?.dismiss()
+                } else {
+                    Log.i(
+                        "AztecEditorActivity",
+                        "simulateMediaUpload: Media progress dialog already dismissed"
+                    )
+                }
+            }
+
+            if (result.isSuccess) {
+                val returnedPath = result.getOrNull()
+                Log.i(
+                    "AztecEditorActivity",
+                    "simulateMediaUpload: Upload success, returned path: $returnedPath"
+                )
+                if (!returnedPath.isNullOrEmpty()) {
+                    attrs.removeAttribute(attrs.getIndex("uploading"))
+                    aztec.visualEditor.clearOverlays(predicate)
+                    val videoIndex = attrs.getIndex("video")
+                    if (videoIndex != -1) {
+                        attrs.removeAttribute(videoIndex)
+                        val playDrawable = AppCompatResources.getDrawable(
+                            this@AztecEditorActivity, android.R.drawable.ic_media_play
+                        )
+                        aztec.visualEditor.setOverlay(predicate, 0, playDrawable, Gravity.CENTER)
+                    }
+
+                    val index = attrs.getIndex("src")
+                    if (index != -1) attrs.removeAttribute(index)
+                    attrs.setValue("src", returnedPath)
+                    Log.i(
+                        "AztecEditorActivity",
+                        "simulateMediaUpload: Updated attributes after upload: $attrs"
+                    )
+                    aztec.visualEditor.updateElementAttributes(predicate, attrs)
+                } else {
+                    Log.i(
+                        "AztecEditorActivity",
+                        "simulateMediaUpload: Upload returned empty string; removing media"
+                    )
+                    aztec.visualEditor.clearOverlays(predicate)
+                    aztec.visualEditor.removeMedia(predicate)
+                }
+            } else {
+                Log.i(
+                    "AztecEditorActivity",
+                    "simulateMediaUpload: Upload failed. Error: ${result.exceptionOrNull()}"
+                )
                 aztec.visualEditor.clearOverlays(predicate)
                 aztec.visualEditor.removeMedia(predicate)
             }
 
             aztec.visualEditor.refreshText()
             aztec.visualEditor.refreshDrawableState()
-        } ?: run {
-            Log.e(
+            Log.i(
                 "AztecEditorActivity",
-                "simulateMediaUpload: Flutter API onAztecFileSelected returned null"
+                "simulateMediaUpload: Finished processing Flutter API callback for media id: $id"
             )
-            runOnUiThread { mediaProgressDialog?.dismiss() }
+        } ?: run {
+            Log.i(
+                "AztecEditorActivity",
+                "simulateMediaUpload: flutterApi returned null; cancelling upload"
+            )
+            runOnUiThread {
+                if (mediaProgressDialog?.isShowing == true) {
+                    Log.i(
+                        "AztecEditorActivity",
+                        "simulateMediaUpload: Dismissing media progress dialog"
+                    )
+                    mediaProgressDialog?.dismiss()
+                }
+            }
             aztec.visualEditor.clearOverlays(predicate)
             aztec.visualEditor.removeMedia(predicate)
             aztec.visualEditor.refreshText()
@@ -759,6 +815,34 @@ class AztecEditorActivity : AppCompatActivity(),
 
         aztec.visualEditor.refreshText()
         Log.i("AztecEditorActivity", "simulateMediaUpload: Completed for media id: $id")
+    }
+
+    private fun showMediaProgressBar() {
+        Log.i("AztecEditorActivity", "showMediaProgressBar: Attempting to show media progress bar")
+        if (isFinishing) {
+            Log.i(
+                "AztecEditorActivity",
+                "showMediaProgressBar: Activity is finishing; skipping dialog display"
+            )
+            return
+        }
+        AlertDialog.Builder(this)
+            .setCancelable(false)
+            .setView(R.layout.aztec_progress_dialog)
+            .create()
+            .also { dialog ->
+                if (!isFinishing) {
+                    dialog.show()
+                    dialog.window?.setGravity(Gravity.CENTER)
+                    mediaProgressDialog = dialog
+                    Log.i("AztecEditorActivity", "showMediaProgressBar: Dialog shown successfully")
+                } else {
+                    Log.i(
+                        "AztecEditorActivity",
+                        "showMediaProgressBar: Activity is finishing after dialog creation; not showing dialog"
+                    )
+                }
+            }
     }
     // endregion
 
@@ -1301,19 +1385,6 @@ class AztecEditorActivity : AppCompatActivity(),
             )
             .create()
             .also { mediaUploadDialog = it; it.show() }
-    }
-
-    private fun showMediaProgressBar() {
-        Log.i("AztecEditorActivity", "showMediaProgressBar: Showing media progress bar")
-        AlertDialog.Builder(this)
-            .setCancelable(false)
-            .setView(R.layout.aztec_progress_dialog)
-            .create()
-            .also {
-                it.show()
-                it.window?.setGravity(Gravity.CENTER)
-                mediaProgressDialog = it
-            }
     }
 
     private fun copyFileToInternalStorage(sourceUri: Uri, newFileName: String): String? {

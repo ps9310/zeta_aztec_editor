@@ -24,9 +24,11 @@
 
     <application>
         <activity
-            android:name=".AztecEditorActivity"
+            android:name="com.zebradevs.aztec.editor.AztecEditorActivity"
             android:exported="false"
-            android:theme="@style/EditorLightTheme" />
+            android:theme="@style/EditorLightTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:launchMode="singleTask" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
