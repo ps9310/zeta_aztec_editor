@@ -2,6 +2,7 @@ package com.zebradevs.aztec.editor
 
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
 import com.zebradevs.aztec.editor.messages.AztecEditorApi
 import com.zebradevs.aztec.editor.messages.AztecEditorConfig
 import com.zebradevs.aztec.editor.messages.AztecFlutterApi
@@ -17,6 +18,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     private var activity: Activity? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        Log.i("ZetaAztecEditorPlugin", "onAttachedToEngine: Called")
         if (AztecFlutterContainer.flutterApi == null) {
             AztecFlutterContainer.flutterApi = AztecFlutterApi(flutterPluginBinding.binaryMessenger)
         }
@@ -28,6 +30,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        Log.i("ZetaAztecEditorPlugin", "onDetachedFromEngine: Called")
         AztecFlutterContainer.flutterApi = null
         AztecEditorApi.setUp(
             binaryMessenger = binding.binaryMessenger,
@@ -36,24 +39,32 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        Log.i("ZetaAztecEditorPlugin", "onAttachedToActivity: Called")
         binding.addActivityResultListener(this)
         activity = binding.activity
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
+        Log.i("ZetaAztecEditorPlugin", "onDetachedFromActivityForConfigChanges: Called")
         activity = null
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+        Log.i("ZetaAztecEditorPlugin", "onReattachedToActivityForConfigChanges: Called")
         binding.addActivityResultListener(this)
         activity = binding.activity
     }
 
     override fun onDetachedFromActivity() {
+        Log.i("ZetaAztecEditorPlugin", "onDetachedFromActivity: Called")
         activity = null
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
+        Log.i(
+            "ZetaAztecEditorPlugin",
+            "onActivityResult: Called with requestCode: $requestCode, resultCode: $resultCode"
+        )
         if (requestCode == AztecEditorActivity.REQUEST_CODE) {
             val result = if (resultCode == Activity.RESULT_OK) {
                 Result.success(data?.getStringExtra("html") ?: "")
@@ -69,12 +80,12 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
         return false
     }
 
-
     override fun launch(
         initialHtml: String?,
         config: AztecEditorConfig,
         callback: (Result<String?>) -> Unit
     ) {
+        Log.i("ZetaAztecEditorPlugin", "launch: Called with initialHtml: $initialHtml")
         runOnUi {
             activity?.let { activity ->
                 pendingResult = callback
