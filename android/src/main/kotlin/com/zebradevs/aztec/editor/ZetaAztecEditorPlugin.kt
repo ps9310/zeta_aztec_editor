@@ -35,30 +35,30 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        Log.i("ZetaAztecEditorPlugin", "onAttachedToActivity: Called")
+        Log.d("ZetaAztecEditorPlugin", "onAttachedToActivity: Called")
         binding.addActivityResultListener(this)
         activity = binding.activity
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
-        Log.i("ZetaAztecEditorPlugin", "onDetachedFromActivityForConfigChanges: Called")
+        Log.d("ZetaAztecEditorPlugin", "onDetachedFromActivityForConfigChanges: Called")
         activity = null
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-        Log.i("ZetaAztecEditorPlugin", "onReattachedToActivityForConfigChanges: Called")
+        Log.d("ZetaAztecEditorPlugin", "onReattachedToActivityForConfigChanges: Called")
         binding.addActivityResultListener(this)
         activity = binding.activity
     }
 
     override fun onDetachedFromActivity() {
-        Log.i("ZetaAztecEditorPlugin", "onDetachedFromActivity: Called")
+        Log.d("ZetaAztecEditorPlugin", "onDetachedFromActivity: Called")
         activity = null
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        Log.i(
-            "ZetaAztecEditorPlugin",
+        Log.d(
+                    "ZetaAztecEditorPlugin",
             "onActivityResult: Called with requestCode: $requestCode, resultCode: $resultCode"
         )
         if (requestCode == AztecEditorActivity.REQUEST_CODE) {
@@ -81,7 +81,7 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
         config: AztecEditorConfig,
         callback: (Result<String?>) -> Unit
     ) {
-        Log.i("ZetaAztecEditorPlugin", "launch: Called with initialHtml: $initialHtml")
+        Log.d("ZetaAztecEditorPlugin", "launch: Called with initialHtml: $initialHtml")
         runOnUi {
             activity?.let { activity ->
                 pendingResult = callback

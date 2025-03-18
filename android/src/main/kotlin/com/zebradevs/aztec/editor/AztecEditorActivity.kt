@@ -100,7 +100,7 @@ class AztecEditorActivity : AppCompatActivity(),
             initialHtml: String?,
             editorConfig: EditorConfig
         ): Intent {
-            Log.i(
+            Log.d(
                 "AztecEditorActivity",
                 "createIntent: Creating intent with initialHtml and editorConfig"
             )
@@ -137,63 +137,63 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // region Lifecycle & Setup
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.i("AztecEditorActivity", "onCreate: Started")
+        Log.d("AztecEditorActivity", "onCreate: Started")
         IntentCompat.getParcelableExtra(intent, "editorConfig", EditorConfig::class.java)?.let {
             editorConfig = it
-            Log.i("AztecEditorActivity", "onCreate: EditorConfig loaded")
+            Log.d("AztecEditorActivity", "onCreate: EditorConfig loaded")
         }
 
         setupThemeAndToolbar()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_aztec_editor)
-        Log.i("AztecEditorActivity", "onCreate: Content view set")
+        Log.d("AztecEditorActivity", "onCreate: Content view set")
 
         setupBackPressHandler()
         setupEditorConfiguration()
         setupAztecEditor(savedInstanceState)
         setupInvalidateOptionsHandler()
-        Log.i("AztecEditorActivity", "onCreate: Setup methods completed")
+        Log.d("AztecEditorActivity", "onCreate: Setup methods completed")
 
         videoOptionLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                Log.i("AztecEditorActivity", "videoOptionLauncher: Received result: $result")
+                Log.d("AztecEditorActivity", "videoOptionLauncher: Received result: $result")
                 if (result.resultCode == Activity.RESULT_OK) {
-                    Log.i("AztecEditorActivity", "Video result received: ${result.data}")
+                    Log.d("AztecEditorActivity", "Video result received: ${result.data}")
                     handleVideoResult(result.data)
                 } else {
-                    Log.i("AztecEditorActivity", "Video result canceled or failed")
+                    Log.d("AztecEditorActivity", "Video result canceled or failed")
                 }
             }
 
         imageSelectLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                Log.i("AztecEditorActivity", "imageSelectLauncher: Received result: $result")
+                Log.d("AztecEditorActivity", "imageSelectLauncher: Received result: $result")
                 if (result.resultCode == Activity.RESULT_OK) {
-                    Log.i("AztecEditorActivity", "Gallery photo result received: ${result.data}")
+                    Log.d("AztecEditorActivity", "Gallery photo result received: ${result.data}")
                     handleGalleryPhotoResult(result.data)
                 } else {
-                    Log.i("AztecEditorActivity", "Gallery photo result canceled or failed")
+                    Log.d("AztecEditorActivity", "Gallery photo result canceled or failed")
                 }
             }
 
         imageCaptureLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                Log.i("AztecEditorActivity", "imageCaptureLauncher: Received result: $result")
+                Log.d("AztecEditorActivity", "imageCaptureLauncher: Received result: $result")
                 if (result.resultCode == Activity.RESULT_OK) {
-                    Log.i("AztecEditorActivity", "Camera photo result received")
+                    Log.d("AztecEditorActivity", "Camera photo result received")
                     handleCameraPhotoResult()
                 } else {
-                    Log.i("AztecEditorActivity", "Camera photo result canceled or failed")
+                    Log.d("AztecEditorActivity", "Camera photo result canceled or failed")
                 }
             }
-        Log.i("AztecEditorActivity", "onCreate: Completed")
+        Log.d("AztecEditorActivity", "onCreate: Completed")
     }
 
     override fun onStart() {
         super.onStart()
-        Log.i("AztecEditorActivity", "onStart: Called")
+        Log.d("AztecEditorActivity", "onStart: Called")
         findViewById<AztecToolbar>(R.id.formatting_toolbar)?.let { toolbar ->
-            Log.i("AztecEditorActivity", "onStart: Setting up AztecToolbar")
+            Log.d("AztecEditorActivity", "onStart: Setting up AztecToolbar")
             setupAztecToolbar(toolbar)
         }
     }
@@ -201,24 +201,24 @@ class AztecEditorActivity : AppCompatActivity(),
     override fun onPause() {
         super.onPause()
         mIsKeyboardOpen = false
-        Log.i("AztecEditorActivity", "onPause: Called and keyboard flag reset")
+        Log.d("AztecEditorActivity", "onPause: Called and keyboard flag reset")
     }
 
     override fun onResume() {
         super.onResume()
-        Log.i("AztecEditorActivity", "onResume: Called")
+        Log.d("AztecEditorActivity", "onResume: Called")
         showActionBarIfNeeded()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.i("AztecEditorActivity", "onDestroy: Called")
+        Log.d("AztecEditorActivity", "onDestroy: Called")
         aztec.visualEditor.disableCrashLogging()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "onConfigurationChanged: New configuration received: $newConfig"
         )
@@ -226,23 +226,23 @@ class AztecEditorActivity : AppCompatActivity(),
             newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE &&
                     !resources.getBoolean(R.bool.is_large_tablet_landscape)
         if (mHideActionBarOnSoftKeyboardUp) {
-            Log.i(
+            Log.d(
                 "AztecEditorActivity",
                 "onConfigurationChanged: Hiding action bar due to keyboard"
             )
             hideActionBarIfNeeded()
         } else {
-            Log.i("AztecEditorActivity", "onConfigurationChanged: Showing action bar")
+            Log.d("AztecEditorActivity", "onConfigurationChanged: Showing action bar")
             showActionBarIfNeeded()
         }
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        Log.i("AztecEditorActivity", "onRestoreInstanceState: Called")
+        Log.d("AztecEditorActivity", "onRestoreInstanceState: Called")
         aztec.initSourceEditorHistory()
         if (savedInstanceState.getBoolean("isMediaUploadDialogVisible")) {
-            Log.i(
+            Log.d(
                 "AztecEditorActivity",
                 "onRestoreInstanceState: Media upload dialog was visible, showing again"
             )
@@ -252,42 +252,42 @@ class AztecEditorActivity : AppCompatActivity(),
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        Log.i("AztecEditorActivity", "onSaveInstanceState: Called")
+        Log.d("AztecEditorActivity", "onSaveInstanceState: Called")
         if (mediaUploadDialog?.isShowing == true) {
             outState.putBoolean("isMediaUploadDialogVisible", true)
-            Log.i("AztecEditorActivity", "onSaveInstanceState: Saving media upload dialog state")
+            Log.d("AztecEditorActivity", "onSaveInstanceState: Saving media upload dialog state")
         }
     }
 
     private fun setupThemeAndToolbar() {
-        Log.i("AztecEditorActivity", "setupThemeAndToolbar: Setting theme and toolbar")
+        Log.d("AztecEditorActivity", "setupThemeAndToolbar: Setting theme and toolbar")
         val themeParam = editorConfig?.theme ?: AztecEditorTheme.SYSTEM
         when (themeParam) {
             AztecEditorTheme.DARK -> {
                 setTheme(R.style.EditorDarkTheme)
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                Log.i("AztecEditorActivity", "setupThemeAndToolbar: Dark theme applied")
+                Log.d("AztecEditorActivity", "setupThemeAndToolbar: Dark theme applied")
             }
 
             AztecEditorTheme.LIGHT -> {
                 setTheme(R.style.EditorLightTheme)
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                Log.i("AztecEditorActivity", "setupThemeAndToolbar: Light theme applied")
+                Log.d("AztecEditorActivity", "setupThemeAndToolbar: Light theme applied")
             }
 
             else -> {
                 setTheme(R.style.EditorDayNightTheme)
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                Log.i("AztecEditorActivity", "setupThemeAndToolbar: System default theme applied")
+                Log.d("AztecEditorActivity", "setupThemeAndToolbar: System default theme applied")
             }
         }
     }
 
     private fun setupBackPressHandler() {
-        Log.i("AztecEditorActivity", "setupBackPressHandler: Setting up back press handler")
+        Log.d("AztecEditorActivity", "setupBackPressHandler: Setting up back press handler")
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                Log.i("AztecEditorActivity", "Back pressed: Handling back press")
+                Log.d("AztecEditorActivity", "Back pressed: Handling back press")
                 mIsKeyboardOpen = false
                 showActionBarIfNeeded()
                 isEnabled = false
@@ -298,13 +298,13 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun setupEditorConfiguration() {
-        Log.i("AztecEditorActivity", "setupEditorConfiguration: Configuring editor settings")
+        Log.d("AztecEditorActivity", "setupEditorConfiguration: Configuring editor settings")
         // Setup hiding the action bar when the soft keyboard is displayed for narrow viewports
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE &&
             !resources.getBoolean(R.bool.is_large_tablet_landscape)
         ) {
             mHideActionBarOnSoftKeyboardUp = true
-            Log.i(
+            Log.d(
                 "AztecEditorActivity",
                 "setupEditorConfiguration: Action bar will hide on soft keyboard up"
             )
@@ -312,7 +312,7 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun setupAztecEditor(savedInstanceState: Bundle?) {
-        Log.i("AztecEditorActivity", "setupAztecEditor: Initializing Aztec editor")
+        Log.d("AztecEditorActivity", "setupAztecEditor: Initializing Aztec editor")
         val isDarkMode = isDarkMode()
         val appBarColor = if (isDarkMode) Color.BLACK else Color.WHITE
         val appBarTextColor = if (isDarkMode) Color.WHITE else Color.BLACK
@@ -326,7 +326,7 @@ class AztecEditorActivity : AppCompatActivity(),
         topToolbar.setTitleTextColor(appBarTextColor)
         topToolbar.setSubtitleTextColor(appBarTextColor)
         setSupportActionBar(topToolbar)
-        Log.i("AztecEditorActivity", "setupAztecEditor: Top toolbar configured")
+        Log.d("AztecEditorActivity", "setupAztecEditor: Top toolbar configured")
 
         supportActionBar?.apply {
             setDisplayHomeAsUpEnabled(true)
@@ -351,7 +351,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 *toolbarActions.toTypedArray()
             )
         )
-        Log.i("AztecEditorActivity", "setupAztecEditor: Toolbar actions set: $toolbarActions")
+        Log.d("AztecEditorActivity", "setupAztecEditor: Toolbar actions set: $toolbarActions")
 
         val headers = editorConfig?.authHeaders ?: emptyMap()
         aztec = Aztec.with(visualEditor, aztecToolbar, this)
@@ -371,14 +371,14 @@ class AztecEditorActivity : AppCompatActivity(),
             .addPlugin(AudioShortcodePlugin())
             .addPlugin(CssUnderlinePlugin())
             .addPlugin(HiddenGutenbergPlugin(visualEditor))
-        Log.i("AztecEditorActivity", "setupAztecEditor: Aztec instance created")
+        Log.d("AztecEditorActivity", "setupAztecEditor: Aztec instance created")
 
         if (toolbarOptions.contains(AztecToolbarOption.VIDEO)) {
             aztec.addPlugin(MediaToolbarImageButton(aztecToolbar).apply {
                 setMediaToolbarButtonClickListener(object :
                     IMediaToolbarButton.IMediaToolbarClickListener {
                     override fun onClick(view: View) {
-                        Log.i("AztecEditorActivity", "MediaToolbarImageButton clicked for VIDEO")
+                        Log.d("AztecEditorActivity", "MediaToolbarImageButton clicked for VIDEO")
                         mediaMenu = PopupMenu(this@AztecEditorActivity, view).apply {
                             setOnMenuItemClickListener(this@AztecEditorActivity)
                             inflate(R.menu.aztec_menu_image)
@@ -395,7 +395,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 setMediaToolbarButtonClickListener(object :
                     IMediaToolbarButton.IMediaToolbarClickListener {
                     override fun onClick(view: View) {
-                        Log.i("AztecEditorActivity", "MediaToolbarVideoButton clicked for IMAGE")
+                        Log.d("AztecEditorActivity", "MediaToolbarVideoButton clicked for IMAGE")
                         mediaMenu = PopupMenu(this@AztecEditorActivity, view).apply {
                             setOnMenuItemClickListener(this@AztecEditorActivity)
                             inflate(R.menu.aztec_menu_video)
@@ -410,7 +410,7 @@ class AztecEditorActivity : AppCompatActivity(),
         aztec.visualEditor.enableCrashLogging(object :
             AztecExceptionHandler.ExceptionHandlerHelper {
             override fun shouldLog(ex: Throwable): Boolean {
-                Log.i("AztecEditorActivity", "Exception captured in crash logging: ${ex.message}")
+                Log.d("AztecEditorActivity", "Exception captured in crash logging: ${ex.message}")
                 return true
             }
         })
@@ -420,7 +420,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
         try {
             val initialHtml = intent.getStringExtra("initialHtml") ?: ""
-            Log.i("AztecEditorActivity", "setupAztecEditor: Loading initial HTML")
+            Log.d("AztecEditorActivity", "setupAztecEditor: Loading initial HTML")
             aztec.visualEditor.fromHtml(initialHtml)
         } catch (e: Exception) {
             Log.e("AztecEditorActivity", "setupAztecEditor: Error loading initial HTML", e)
@@ -442,7 +442,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 }
 
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    Log.i(
+                    Log.d(
                         "AztecEditorActivity",
                         "Text changed in editor. Scheduling debounce update."
                     )
@@ -451,10 +451,10 @@ class AztecEditorActivity : AppCompatActivity(),
                     // Create a new Runnable to send the update after the debounce delay
                     debounceRunnable = Runnable {
                         val htmlContent = correctVideoTags(aztec.visualEditor.toHtml())
-                        Log.i("AztecEditorActivity", "Debounce complete. HTML content updated.")
+                        Log.d("AztecEditorActivity", "Debounce complete. HTML content updated.")
                         runOnUiThread {
                             AztecFlutterContainer.flutterApi?.onAztecHtmlChanged(htmlContent) {
-                                Log.i("AztecEditorActivity", "HTML > flutter : $htmlContent")
+                                Log.d("AztecEditorActivity", "HTML > flutter : $htmlContent")
                             }
                         }
                     }
@@ -465,13 +465,13 @@ class AztecEditorActivity : AppCompatActivity(),
         )
 
         if (savedInstanceState == null) {
-            Log.i("AztecEditorActivity", "setupAztecEditor: Initializing source editor history")
+            Log.d("AztecEditorActivity", "setupAztecEditor: Initializing source editor history")
             aztec.initSourceEditorHistory()
         }
     }
 
     private fun setupAztecToolbar(toolbar: AztecToolbar) {
-        Log.i("AztecEditorActivity", "setupAztecToolbar: Configuring toolbar")
+        Log.d("AztecEditorActivity", "setupAztecToolbar: Configuring toolbar")
         val availableToolbarOptions = availableToolbarOptions()
         val toolbarActions = availableToolbarOptions.mapNotNull { toAztecOption(it) }.toSet()
 
@@ -484,7 +484,7 @@ class AztecEditorActivity : AppCompatActivity(),
         toolbarActions.forEach { action ->
             toolbar.findViewById<View>(action.buttonId)?.let {
                 it.backgroundTintList = stateList
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "setupAztecToolbar: Set tint for buttonId ${action.buttonId}"
                 )
@@ -504,10 +504,10 @@ class AztecEditorActivity : AppCompatActivity(),
                     )
                 )
                 it.visibility = View.VISIBLE
-                Log.i("AztecEditorActivity", "setupAztecToolbar: Divider set visible")
+                Log.d("AztecEditorActivity", "setupAztecToolbar: Divider set visible")
             } else {
                 it.visibility = View.GONE
-                Log.i("AztecEditorActivity", "setupAztecToolbar: Divider hidden")
+                Log.d("AztecEditorActivity", "setupAztecToolbar: Divider hidden")
             }
         }
     }
@@ -517,13 +517,13 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun setupInvalidateOptionsHandler() {
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "setupInvalidateOptionsHandler: Initializing handler for options menu invalidation"
         )
         invalidateOptionsHandler = Handler(Looper.getMainLooper())
         invalidateOptionsRunnable = Runnable {
-            Log.i("AztecEditorActivity", "invalidateOptionsRunnable: Invalidating options menu")
+            Log.d("AztecEditorActivity", "invalidateOptionsRunnable: Invalidating options menu")
             invalidateOptionsMenu()
         }
     }
@@ -547,11 +547,11 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // region Media Handling
     private fun handleCameraPhotoResult() {
-        Log.i("AztecEditorActivity", "handleCameraPhotoResult: Started")
+        Log.d("AztecEditorActivity", "handleCameraPhotoResult: Started")
         // For camera photo, mediaPath is already set to the external file path.
         val sourceFile = File(mediaPath)
         if (sourceFile.exists()) {
-            Log.i("AztecEditorActivity", "handleCameraPhotoResult: Source file exists: $mediaPath")
+            Log.d("AztecEditorActivity", "handleCameraPhotoResult: Source file exists: $mediaPath")
             // Create a new file name for internal storage.
             val newFileName = "IMG_${System.currentTimeMillis()}.jpg"
             val destinationFile = File(filesDir, newFileName)
@@ -561,7 +561,7 @@ class AztecEditorActivity : AppCompatActivity(),
                         input.copyTo(output)
                     }
                 }
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "handleCameraPhotoResult: Image copied to internal storage: ${destinationFile.absolutePath}"
                 )
@@ -576,7 +576,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 ToastUtils.showToast(this, "Failed to copy image to internal storage!")
             }
         } else {
-            Log.i(
+            Log.d(
                 "AztecEditorActivity",
                 "handleCameraPhotoResult: Source file does not exist: $mediaPath"
             )
@@ -584,12 +584,12 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun handleGalleryPhotoResult(data: Intent?) {
-        Log.i("AztecEditorActivity", "handleGalleryPhotoResult: Started")
+        Log.d("AztecEditorActivity", "handleGalleryPhotoResult: Started")
         data?.data?.let { uri ->
             val newFileName = "IMG_${System.currentTimeMillis()}.jpg"
             val internalPath = copyFileToInternalStorage(uri, newFileName)
             if (internalPath != null) {
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "handleGalleryPhotoResult: Gallery photo copied to internal storage: $internalPath"
                 )
@@ -606,12 +606,12 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun handleVideoResult(data: Intent?) {
-        Log.i("AztecEditorActivity", "handleVideoResult: Started")
+        Log.d("AztecEditorActivity", "handleVideoResult: Started")
         data?.data?.let { uri ->
             val newFileName = "VID_${System.currentTimeMillis()}.mp4"
             val internalPath = copyFileToInternalStorage(uri, newFileName)
             if (internalPath != null) {
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "handleVideoResult: Video copied to internal storage: $internalPath"
                 )
@@ -628,39 +628,39 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun insertImageAndSimulateUpload(mediaPath: String) {
-        Log.i("AztecEditorActivity", "insertImageAndSimulateUpload: Started for image: $mediaPath")
+        Log.d("AztecEditorActivity", "insertImageAndSimulateUpload: Started for image: $mediaPath")
         val thumbnail = ZThumbnailUtils.getImageThumbnail(
             mediaPath,
             maxWidth = aztec.visualEditor.maxWidth
         )
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "insertImageAndSimulateUpload: Thumbnail generated for image: $mediaPath"
         )
 
         val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = false)
         aztec.visualEditor.insertImage(BitmapDrawable(resources, thumbnail), attrs)
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "insertImageAndSimulateUpload: Image inserted into editor with attributes: $attrs"
         )
         simulateMediaUpload(id, attrs)  // simulates upload progress and updates overlays
         aztec.toolbar.toggleMediaToolbar()
-        Log.i("AztecEditorActivity", "insertImageAndSimulateUpload: Media toolbar toggled")
+        Log.d("AztecEditorActivity", "insertImageAndSimulateUpload: Media toolbar toggled")
     }
 
     private fun insertVideoAndSimulateUpload(mediaPath: String) {
-        Log.i("AztecEditorActivity", "insertVideoAndSimulateUpload: Started for video: $mediaPath")
+        Log.d("AztecEditorActivity", "insertVideoAndSimulateUpload: Started for video: $mediaPath")
         val thumbnail = ZThumbnailUtils.getVideoThumbnail(mediaPath)
         val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = true)
         aztec.visualEditor.insertVideo(BitmapDrawable(resources, thumbnail), attrs)
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "insertVideoAndSimulateUpload: Video inserted into editor with attributes: $attrs"
         )
         simulateMediaUpload(id, attrs)
         aztec.toolbar.toggleMediaToolbar()
-        Log.i("AztecEditorActivity", "insertVideoAndSimulateUpload: Media toolbar toggled")
+        Log.d("AztecEditorActivity", "insertVideoAndSimulateUpload: Media toolbar toggled")
     }
 
     private fun generateAttributesForMedia(
@@ -675,7 +675,7 @@ class AztecEditorActivity : AppCompatActivity(),
             setValue("uploading", "true")
             if (isVideo) setValue("video", "true")
         }
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "generateAttributesForMedia: Generated attributes for media: $mediaPath, isVideo: $isVideo"
         )
@@ -683,7 +683,7 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun simulateMediaUpload(id: String, attrs: AztecAttributes) {
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "simulateMediaUpload: Started for media id: $id, mediaPath: $mediaPath"
         )
@@ -709,35 +709,35 @@ class AztecEditorActivity : AppCompatActivity(),
 
         runOnUiThread {
             if (isFinishing) {
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "simulateMediaUpload: Activity is finishing, skipping showing progress bar"
                 )
             } else {
-                Log.i("AztecEditorActivity", "simulateMediaUpload: Showing media progress bar")
+                Log.d("AztecEditorActivity", "simulateMediaUpload: Showing media progress bar")
                 showMediaProgressBar()
             }
         }
 
         if (AztecFlutterContainer.flutterApi == null) {
-            Log.i("AztecEditorActivity", "simulateMediaUpload: flutterApi is null!")
+            Log.d("AztecEditorActivity", "simulateMediaUpload: flutterApi is null!")
         }
 
         AztecFlutterContainer.flutterApi?.onAztecFileSelected(mediaPath) { result ->
-            Log.i(
+            Log.d(
                 "AztecEditorActivity",
                 "simulateMediaUpload: Flutter API callback invoked with result: $result"
             )
 
             runOnUiThread {
                 if (mediaProgressDialog?.isShowing == true) {
-                    Log.i(
+                    Log.d(
                         "AztecEditorActivity",
                         "simulateMediaUpload: Dismissing media progress dialog"
                     )
                     mediaProgressDialog?.dismiss()
                 } else {
-                    Log.i(
+                    Log.d(
                         "AztecEditorActivity",
                         "simulateMediaUpload: Media progress dialog already dismissed"
                     )
@@ -746,7 +746,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
             if (result.isSuccess) {
                 val returnedPath = result.getOrNull()
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "simulateMediaUpload: Upload success, returned path: $returnedPath"
                 )
@@ -765,13 +765,13 @@ class AztecEditorActivity : AppCompatActivity(),
                     val index = attrs.getIndex("src")
                     if (index != -1) attrs.removeAttribute(index)
                     attrs.setValue("src", returnedPath)
-                    Log.i(
+                    Log.d(
                         "AztecEditorActivity",
                         "simulateMediaUpload: Updated attributes after upload: $attrs"
                     )
                     aztec.visualEditor.updateElementAttributes(predicate, attrs)
                 } else {
-                    Log.i(
+                    Log.d(
                         "AztecEditorActivity",
                         "simulateMediaUpload: Upload returned empty string; removing media"
                     )
@@ -779,7 +779,7 @@ class AztecEditorActivity : AppCompatActivity(),
                     aztec.visualEditor.removeMedia(predicate)
                 }
             } else {
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "simulateMediaUpload: Upload failed. Error: ${result.exceptionOrNull()}"
                 )
@@ -789,18 +789,18 @@ class AztecEditorActivity : AppCompatActivity(),
 
             aztec.visualEditor.refreshText()
             aztec.visualEditor.refreshDrawableState()
-            Log.i(
+            Log.d(
                 "AztecEditorActivity",
                 "simulateMediaUpload: Finished processing Flutter API callback for media id: $id"
             )
         } ?: run {
-            Log.i(
+            Log.d(
                 "AztecEditorActivity",
                 "simulateMediaUpload: flutterApi returned null; cancelling upload"
             )
             runOnUiThread {
                 if (mediaProgressDialog?.isShowing == true) {
-                    Log.i(
+                    Log.d(
                         "AztecEditorActivity",
                         "simulateMediaUpload: Dismissing media progress dialog"
                     )
@@ -814,13 +814,13 @@ class AztecEditorActivity : AppCompatActivity(),
         }
 
         aztec.visualEditor.refreshText()
-        Log.i("AztecEditorActivity", "simulateMediaUpload: Completed for media id: $id")
+        Log.d("AztecEditorActivity", "simulateMediaUpload: Completed for media id: $id")
     }
 
     private fun showMediaProgressBar() {
-        Log.i("AztecEditorActivity", "showMediaProgressBar: Attempting to show media progress bar")
+        Log.d("AztecEditorActivity", "showMediaProgressBar: Attempting to show media progress bar")
         if (isFinishing) {
-            Log.i(
+            Log.d(
                 "AztecEditorActivity",
                 "showMediaProgressBar: Activity is finishing; skipping dialog display"
             )
@@ -835,9 +835,9 @@ class AztecEditorActivity : AppCompatActivity(),
                     dialog.show()
                     dialog.window?.setGravity(Gravity.CENTER)
                     mediaProgressDialog = dialog
-                    Log.i("AztecEditorActivity", "showMediaProgressBar: Dialog shown successfully")
+                    Log.d("AztecEditorActivity", "showMediaProgressBar: Dialog shown successfully")
                 } else {
-                    Log.i(
+                    Log.d(
                         "AztecEditorActivity",
                         "showMediaProgressBar: Activity is finishing after dialog creation; not showing dialog"
                     )
@@ -848,7 +848,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // region Permission Handling
     private fun onCameraPhotoMediaOptionSelected() {
-        Log.i("AztecEditorActivity", "onCameraPhotoMediaOptionSelected: Called")
+        Log.d("AztecEditorActivity", "onCameraPhotoMediaOptionSelected: Called")
         if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(
                 this, MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE
             )
@@ -859,7 +859,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 mediaPath = File.createTempFile(
                     mediaFile, ".jpg", getExternalFilesDir(Environment.DIRECTORY_PICTURES)
                 ).absolutePath
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "onCameraPhotoMediaOptionSelected: Temp file created: $mediaPath"
                 )
@@ -868,7 +868,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 mediaPath =
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
                         .toString() + File.separator + "Camera" + File.separator + mediaFile
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "onCameraPhotoMediaOptionSelected: File path set for legacy devices: $mediaPath"
                 )
@@ -878,7 +878,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 FileProvider.getUriForFile(this, "$packageName.provider", File(mediaPath))
             )
             if (intent.resolveActivity(packageManager) != null) {
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "onCameraPhotoMediaOptionSelected: Launching camera intent"
                 )
@@ -888,14 +888,14 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun onCameraVideoMediaOptionSelected() {
-        Log.i("AztecEditorActivity", "onCameraVideoMediaOptionSelected: Called")
+        Log.d("AztecEditorActivity", "onCameraVideoMediaOptionSelected: Called")
         if (PermissionUtils.checkAndRequestCameraAndStoragePermissions(
                 this, MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE
             )
         ) {
             val intent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
             if (intent.resolveActivity(packageManager) != null) {
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "onCameraVideoMediaOptionSelected: Launching video capture intent"
                 )
@@ -905,7 +905,7 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun onPhotosMediaOptionSelected() {
-        Log.i("AztecEditorActivity", "onPhotosMediaOptionSelected: Called")
+        Log.d("AztecEditorActivity", "onPhotosMediaOptionSelected: Called")
         if (PermissionUtils.checkAndRequestStoragePermission(
                 this, MEDIA_PHOTOS_PERMISSION_REQUEST_CODE
             )
@@ -915,7 +915,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 type = "image/*"
             }
             try {
-                Log.i("AztecEditorActivity", "onPhotosMediaOptionSelected: Launching photo chooser")
+                Log.d("AztecEditorActivity", "onPhotosMediaOptionSelected: Launching photo chooser")
                 imageSelectLauncher.launch(intent)
             } catch (exception: ActivityNotFoundException) {
                 AppLog.e(AppLog.T.EDITOR, exception.message)
@@ -929,7 +929,7 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun onVideosMediaOptionSelected() {
-        Log.i("AztecEditorActivity", "onVideosMediaOptionSelected: Called")
+        Log.d("AztecEditorActivity", "onVideosMediaOptionSelected: Called")
         if (PermissionUtils.checkAndRequestStoragePermission(
                 this, MEDIA_PHOTOS_PERMISSION_REQUEST_CODE
             )
@@ -939,7 +939,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 type = "video/*"
             }
             try {
-                Log.i("AztecEditorActivity", "onVideosMediaOptionSelected: Launching video chooser")
+                Log.d("AztecEditorActivity", "onVideosMediaOptionSelected: Launching video chooser")
                 videoOptionLauncher.launch(intent)
             } catch (exception: ActivityNotFoundException) {
                 AppLog.e(AppLog.T.EDITOR, exception.message)
@@ -955,7 +955,7 @@ class AztecEditorActivity : AppCompatActivity(),
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<out String>, grantResults: IntArray
     ) {
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "onRequestPermissionsResult: Called with requestCode $requestCode"
         )
@@ -967,7 +967,7 @@ class AztecEditorActivity : AppCompatActivity(),
                             (grantResults[i] == PackageManager.PERMISSION_DENIED)
                 }
                 if (isPermissionDenied) {
-                    Log.i(
+                    Log.d(
                         "AztecEditorActivity",
                         "onRequestPermissionsResult: Camera permissions denied"
                     )
@@ -978,7 +978,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 } else {
                     when (requestCode) {
                         MEDIA_CAMERA_PHOTO_PERMISSION_REQUEST_CODE -> {
-                            Log.i(
+                            Log.d(
                                 "AztecEditorActivity",
                                 "onRequestPermissionsResult: Permissions granted, launching camera photo option"
                             )
@@ -986,7 +986,7 @@ class AztecEditorActivity : AppCompatActivity(),
                         }
 
                         MEDIA_CAMERA_VIDEO_PERMISSION_REQUEST_CODE -> {
-                            Log.i(
+                            Log.d(
                                 "AztecEditorActivity",
                                 "onRequestPermissionsResult: Permissions granted, launching camera video option"
                             )
@@ -1004,7 +1004,7 @@ class AztecEditorActivity : AppCompatActivity(),
                 when (requestCode) {
                     MEDIA_PHOTOS_PERMISSION_REQUEST_CODE -> {
                         if (isPermissionDenied) {
-                            Log.i(
+                            Log.d(
                                 "AztecEditorActivity",
                                 "onRequestPermissionsResult: Photos permission denied"
                             )
@@ -1013,7 +1013,7 @@ class AztecEditorActivity : AppCompatActivity(),
                                 getString(R.string.permission_required_media_photos)
                             )
                         } else {
-                            Log.i(
+                            Log.d(
                                 "AztecEditorActivity",
                                 "onRequestPermissionsResult: Photos permission granted, launching photos option"
                             )
@@ -1023,7 +1023,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
                     MEDIA_VIDEOS_PERMISSION_REQUEST_CODE -> {
                         if (isPermissionDenied) {
-                            Log.i(
+                            Log.d(
                                 "AztecEditorActivity",
                                 "onRequestPermissionsResult: Videos permission denied"
                             )
@@ -1032,7 +1032,7 @@ class AztecEditorActivity : AppCompatActivity(),
                                 getString(R.string.permission_required_media_videos)
                             )
                         } else {
-                            Log.i(
+                            Log.d(
                                 "AztecEditorActivity",
                                 "onRequestPermissionsResult: Videos permission granted, launching videos option"
                             )
@@ -1058,7 +1058,7 @@ class AztecEditorActivity : AppCompatActivity(),
     private fun hideActionBarIfNeeded() {
         supportActionBar?.let { actionBar ->
             if (!isHardwareKeyboardPresent() && mHideActionBarOnSoftKeyboardUp && mIsKeyboardOpen && actionBar.isShowing) {
-                Log.i("AztecEditorActivity", "hideActionBarIfNeeded: Hiding action bar")
+                Log.d("AztecEditorActivity", "hideActionBarIfNeeded: Hiding action bar")
                 actionBar.hide()
             }
         }
@@ -1067,7 +1067,7 @@ class AztecEditorActivity : AppCompatActivity(),
     private fun showActionBarIfNeeded() {
         supportActionBar?.let { actionBar ->
             if (!actionBar.isShowing) {
-                Log.i("AztecEditorActivity", "showActionBarIfNeeded: Showing action bar")
+                Log.d("AztecEditorActivity", "showActionBarIfNeeded: Showing action bar")
                 actionBar.show()
             }
         }
@@ -1076,7 +1076,7 @@ class AztecEditorActivity : AppCompatActivity(),
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouch(view: View, event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_UP) {
-            Log.i("AztecEditorActivity", "onTouch: ACTION_UP detected, setting keyboard open flag")
+            Log.d("AztecEditorActivity", "onTouch: ACTION_UP detected, setting keyboard open flag")
             mIsKeyboardOpen = true
             hideActionBarIfNeeded()
         }
@@ -1084,7 +1084,7 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     override fun onImeBack() {
-        Log.i("AztecEditorActivity", "onImeBack: IME back pressed")
+        Log.d("AztecEditorActivity", "onImeBack: IME back pressed")
         mIsKeyboardOpen = false
         showActionBarIfNeeded()
     }
@@ -1092,7 +1092,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // region Options Menu & Toolbar Callbacks
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        Log.i("AztecEditorActivity", "onCreateOptionsMenu: Inflating options menu")
+        Log.d("AztecEditorActivity", "onCreateOptionsMenu: Inflating options menu")
         menuInflater.inflate(R.menu.aztec_menu_main, menu)
         val menuIconColor = if (isDarkMode()) Color.WHITE else Color.BLACK
         menu.forEach { it.icon?.setTint(menuIconColor) }
@@ -1100,15 +1100,15 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        Log.i("AztecEditorActivity", "onOptionsItemSelected: Item selected with id ${item.itemId}")
+        Log.d("AztecEditorActivity", "onOptionsItemSelected: Item selected with id ${item.itemId}")
         when (item.itemId) {
             android.R.id.home -> {
-                Log.i("AztecEditorActivity", "onOptionsItemSelected: Home/up button pressed")
+                Log.d("AztecEditorActivity", "onOptionsItemSelected: Home/up button pressed")
                 finish()
             }
 
             R.id.undo -> {
-                Log.i("AztecEditorActivity", "onOptionsItemSelected: Undo action selected")
+                Log.d("AztecEditorActivity", "onOptionsItemSelected: Undo action selected")
                 if (aztec.visualEditor.visibility == View.VISIBLE) {
                     aztec.visualEditor.undo()
                 } else {
@@ -1117,7 +1117,7 @@ class AztecEditorActivity : AppCompatActivity(),
             }
 
             R.id.redo -> {
-                Log.i("AztecEditorActivity", "onOptionsItemSelected: Redo action selected")
+                Log.d("AztecEditorActivity", "onOptionsItemSelected: Redo action selected")
                 if (aztec.visualEditor.visibility == View.VISIBLE) {
                     aztec.visualEditor.redo()
                 } else {
@@ -1126,7 +1126,7 @@ class AztecEditorActivity : AppCompatActivity(),
             }
 
             R.id.done -> {
-                Log.i("AztecEditorActivity", "onOptionsItemSelected: Done action selected")
+                Log.d("AztecEditorActivity", "onOptionsItemSelected: Done action selected")
                 doneEditing()
             }
         }
@@ -1134,7 +1134,7 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        Log.i("AztecEditorActivity", "onPrepareOptionsMenu: Called")
+        Log.d("AztecEditorActivity", "onPrepareOptionsMenu: Called")
         menu?.findItem(R.id.redo)?.isEnabled =
             aztec.visualEditor.history.redoValid()
         menu?.findItem(R.id.undo)?.isEnabled =
@@ -1143,7 +1143,7 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     override fun onRedoEnabled() {
-        Log.i("AztecEditorActivity", "onRedoEnabled: Called")
+        Log.d("AztecEditorActivity", "onRedoEnabled: Called")
         invalidateOptionsHandler.removeCallbacks(invalidateOptionsRunnable)
         invalidateOptionsHandler.postDelayed(
             invalidateOptionsRunnable,
@@ -1152,7 +1152,7 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     override fun onUndoEnabled() {
-        Log.i("AztecEditorActivity", "onUndoEnabled: Called")
+        Log.d("AztecEditorActivity", "onUndoEnabled: Called")
         invalidateOptionsHandler.removeCallbacks(invalidateOptionsRunnable)
         invalidateOptionsHandler.postDelayed(
             invalidateOptionsRunnable,
@@ -1161,44 +1161,44 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     override fun onUndo() {
-        Log.i("AztecEditorActivity", "onUndo: Called")
+        Log.d("AztecEditorActivity", "onUndo: Called")
     }
 
     override fun onRedo() {
-        Log.i("AztecEditorActivity", "onRedo: Called")
+        Log.d("AztecEditorActivity", "onRedo: Called")
     }
 
     private fun doneEditing() {
-        Log.i("AztecEditorActivity", "doneEditing: Called")
+        Log.d("AztecEditorActivity", "doneEditing: Called")
         val html = correctVideoTags(aztec.visualEditor.toHtml())
         setResult(RESULT_OK, Intent().apply { putExtra("html", html) })
-        Log.i("AztecEditorActivity", "doneEditing: Finished editing with HTML: $html")
+        Log.d("AztecEditorActivity", "doneEditing: Finished editing with HTML: $html")
         finish()
     }
     // endregion
 
     // region Toolbar & Menu Item Callbacks
     override fun onToolbarCollapseButtonClicked() {
-        Log.i("AztecEditorActivity", "onToolbarCollapseButtonClicked: Called")
+        Log.d("AztecEditorActivity", "onToolbarCollapseButtonClicked: Called")
     }
 
     override fun onToolbarExpandButtonClicked() {
-        Log.i("AztecEditorActivity", "onToolbarExpandButtonClicked: Called")
+        Log.d("AztecEditorActivity", "onToolbarExpandButtonClicked: Called")
     }
 
     override fun onToolbarFormatButtonClicked(format: ITextFormat, isKeyboardShortcut: Boolean) {
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "onToolbarFormatButtonClicked: Format clicked: $format, isKeyboardShortcut: $isKeyboardShortcut"
         )
     }
 
     override fun onToolbarHeadingButtonClicked() {
-        Log.i("AztecEditorActivity", "onToolbarHeadingButtonClicked: Called")
+        Log.d("AztecEditorActivity", "onToolbarHeadingButtonClicked: Called")
     }
 
     override fun onToolbarHtmlButtonClicked() {
-        Log.i("AztecEditorActivity", "onToolbarHtmlButtonClicked: Called")
+        Log.d("AztecEditorActivity", "onToolbarHtmlButtonClicked: Called")
         val uploadingPredicate = object : AztecText.AttributePredicate {
             override fun matches(attrs: Attributes): Boolean = attrs.getIndex("uploading") > -1
         }
@@ -1212,16 +1212,16 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     override fun onToolbarListButtonClicked() {
-        Log.i("AztecEditorActivity", "onToolbarListButtonClicked: Called")
+        Log.d("AztecEditorActivity", "onToolbarListButtonClicked: Called")
     }
 
     override fun onToolbarMediaButtonClicked(): Boolean {
-        Log.i("AztecEditorActivity", "onToolbarMediaButtonClicked: Called")
+        Log.d("AztecEditorActivity", "onToolbarMediaButtonClicked: Called")
         return false
     }
 
     override fun onMenuItemClick(item: MenuItem?): Boolean {
-        Log.i("AztecEditorActivity", "onMenuItemClick: Called for item id: ${item?.itemId}")
+        Log.d("AztecEditorActivity", "onMenuItemClick: Called for item id: ${item?.itemId}")
         item?.isChecked = !(item?.isChecked ?: false)
         return when (item?.itemId) {
             R.id.take_photo -> {
@@ -1251,13 +1251,13 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // region Media Tap & Info Callbacks
     override fun onImageTapped(attrs: AztecAttributes, naturalWidth: Int, naturalHeight: Int) {
-        Log.i("AztecEditorActivity", "onImageTapped: Called with attributes: $attrs")
+        Log.d("AztecEditorActivity", "onImageTapped: Called with attributes: $attrs")
         val url = attrs.getValue("src")
         url?.let { showMediaOptions(it) }
     }
 
     override fun onVideoTapped(attrs: AztecAttributes) {
-        Log.i("AztecEditorActivity", "onVideoTapped: Called with attributes: $attrs")
+        Log.d("AztecEditorActivity", "onVideoTapped: Called with attributes: $attrs")
         val url = if (attrs.hasAttribute(ATTRIBUTE_VIDEOPRESS_HIDDEN_SRC))
             attrs.getValue(ATTRIBUTE_VIDEOPRESS_HIDDEN_SRC)
         else
@@ -1267,17 +1267,17 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     override fun onVideoInfoRequested(attrs: AztecAttributes) {
-        Log.i("AztecEditorActivity", "onVideoInfoRequested: Called with attributes: $attrs")
+        Log.d("AztecEditorActivity", "onVideoInfoRequested: Called with attributes: $attrs")
     }
 
     override fun onAudioTapped(attrs: AztecAttributes) {
-        Log.i("AztecEditorActivity", "onAudioTapped: Called with attributes: $attrs")
+        Log.d("AztecEditorActivity", "onAudioTapped: Called with attributes: $attrs")
         val url = attrs.getValue("src")
         url?.let { showMediaOptions(it) }
     }
 
     override fun onMediaDeleted(attrs: AztecAttributes) {
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "onMediaDeleted: Called for media with src: ${attrs.getValue("src")}"
         )
@@ -1289,12 +1289,12 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun showMediaOptions(url: String) {
-        Log.i("AztecEditorActivity", "showMediaOptions: Called for URL: $url")
+        Log.d("AztecEditorActivity", "showMediaOptions: Called for URL: $url")
         val options = arrayOf("Add new line above", "Add new line below", "Delete Media", "Cancel")
         AlertDialog.Builder(this)
             .setTitle("Media Options")
             .setItems(options) { dialog, which ->
-                Log.i("AztecEditorActivity", "showMediaOptions: Option selected index $which")
+                Log.d("AztecEditorActivity", "showMediaOptions: Option selected index $which")
                 when (which) {
                     0 -> addNewLine(true, url)
                     1 -> addNewLine(false, url)
@@ -1310,13 +1310,13 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun addNewLine(above: Boolean, url: String) {
-        Log.i("AztecEditorActivity", "addNewLine: Called for URL: $url, above: $above")
+        Log.d("AztecEditorActivity", "addNewLine: Called for URL: $url, above: $above")
         // Get the editor's editable text.
         val editableText = aztec.visualEditor.text
         // Find all AztecMediaSpan instances matching the given URL.
         val mediaSpans = editableText.getSpans(0, editableText.length, AztecMediaSpan::class.java)
             .filter { it.attributes.getValue("src") == url }
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "addNewLine: Found ${mediaSpans.size} media spans for URL: $url"
         )
@@ -1328,14 +1328,14 @@ class AztecEditorActivity : AppCompatActivity(),
             if (above) {
                 // Insert newline before the span.
                 editableText.insert(start, "\n")
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "addNewLine: Inserted newline above media span at position $start"
                 )
             } else {
                 // Insert newline after the span.
                 editableText.insert(end, "\n")
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "addNewLine: Inserted newline below media span at position $end"
                 )
@@ -1345,19 +1345,19 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // This method displays a confirmation dialog with "Delete" and "Cancel" options.
     private fun showDeleteConfirmation(url: String) {
-        Log.i("AztecEditorActivity", "showDeleteConfirmation: Called for URL: $url")
+        Log.d("AztecEditorActivity", "showDeleteConfirmation: Called for URL: $url")
         AlertDialog.Builder(this)
             .setTitle("Confirm Deletion")
             .setMessage("Are you sure you want to delete this media? This action cannot be undone.")
             .setPositiveButton("Delete") { _, _ ->
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "showDeleteConfirmation: Delete confirmed for URL: $url"
                 )
                 deleteMedia(url)
             }
             .setNegativeButton("Cancel") { _, _ ->
-                Log.i(
+                Log.d(
                     "AztecEditorActivity",
                     "showDeleteConfirmation: Delete canceled for URL: $url"
                 )
@@ -1367,7 +1367,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // Stub function to handle media deletion logic.
     private fun deleteMedia(url: String) {
-        Log.i("AztecEditorActivity", "deleteMedia: Called for URL: $url")
+        Log.d("AztecEditorActivity", "deleteMedia: Called for URL: $url")
         aztec.visualEditor.removeMedia { attrs ->
             attrs.getValue("src") == url
         }
@@ -1376,7 +1376,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
     // region Media Upload Dialog
     private fun showMediaUploadDialog() {
-        Log.i("AztecEditorActivity", "showMediaUploadDialog: Showing media upload dialog")
+        Log.d("AztecEditorActivity", "showMediaUploadDialog: Showing media upload dialog")
         AlertDialog.Builder(this)
             .setMessage(getString(org.wordpress.aztec.R.string.media_upload_dialog_message))
             .setPositiveButton(
@@ -1388,7 +1388,7 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun copyFileToInternalStorage(sourceUri: Uri, newFileName: String): String? {
-        Log.i(
+        Log.d(
             "AztecEditorActivity",
             "copyFileToInternalStorage: Started for URI: $sourceUri, newFileName: $newFileName"
         )
@@ -1404,7 +1404,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
             // Copy the contents from the source to the destination
             inputStream.copyTo(outputStream)
-            Log.i(
+            Log.d(
                 "AztecEditorActivity",
                 "copyFileToInternalStorage: File copied to ${outputFile.absolutePath}"
             )
@@ -1421,14 +1421,14 @@ class AztecEditorActivity : AppCompatActivity(),
     }
 
     private fun correctVideoTags(html: String): String {
-        Log.i("AztecEditorActivity", "correctVideoTags: Called")
+        Log.d("AztecEditorActivity", "correctVideoTags: Called")
         return html.replace(videoRegex, """<video src="$1"></video>""")
     }
     // endregion
 }
 
 fun Context.hideKeyboard(view: View) {
-    Log.i("AztecEditorActivity", "hideKeyboard: Called")
+    Log.d("AztecEditorActivity", "hideKeyboard: Called")
     val imm = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
     imm.hideSoftInputFromWindow(view.windowToken, 0)
 }
