@@ -213,15 +213,16 @@ class AztecEditorController: UIViewController {
         registerAttachmentImageProviders()
         
         editorView.setHTML(initialHtml ?? "")
-        editorView.becomeFirstResponder()
+        editorView.richTextView.inputAccessoryView = formatBar
     }
+    
     
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         debounceTimer?.invalidate()
     }
     
-    // MARK: - Navigation Bar Button Actions
+    // MARK: - Navigation Bar Button Actions`
     
     @objc func undoAction() {
         richTextView.undoManager?.undo()
@@ -348,6 +349,9 @@ class AztecEditorController: UIViewController {
         super.viewDidAppear(animated)
         // Re-enable scroll after setup is done
         editorView.isScrollEnabled = true
+        richTextView.becomeFirstResponder()
+        let endPosition = richTextView.endOfDocument
+        richTextView.selectedTextRange = richTextView.textRange(from: endPosition, to: endPosition)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -553,7 +557,7 @@ extension AztecEditorController : UITextViewDelegate {
             default:
                 break
         }
-        textView.inputAccessoryView = formatBar
+        
         return true
     }
     

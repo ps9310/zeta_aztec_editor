@@ -73,6 +73,8 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.Random
+import androidx.core.view.isVisible
+import androidx.core.graphics.drawable.toDrawable
 
 class AztecEditorActivity : AppCompatActivity(),
     AztecText.OnImeBackListener,
@@ -208,6 +210,11 @@ class AztecEditorActivity : AppCompatActivity(),
         super.onResume()
         Log.d("AztecEditorActivity", "onResume: Called")
         showActionBarIfNeeded()
+
+        // Request focus on the EditText
+        aztec.visualEditor.requestFocus()
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(aztec.visualEditor, InputMethodManager.SHOW_IMPLICIT)
     }
 
     override fun onDestroy() {
@@ -639,7 +646,7 @@ class AztecEditorActivity : AppCompatActivity(),
         )
 
         val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = false)
-        aztec.visualEditor.insertImage(BitmapDrawable(resources, thumbnail), attrs)
+        aztec.visualEditor.insertImage(thumbnail?.toDrawable(resources), attrs)
         Log.d(
             "AztecEditorActivity",
             "insertImageAndSimulateUpload: Image inserted into editor with attributes: $attrs"
@@ -653,7 +660,7 @@ class AztecEditorActivity : AppCompatActivity(),
         Log.d("AztecEditorActivity", "insertVideoAndSimulateUpload: Started for video: $mediaPath")
         val thumbnail = ZThumbnailUtils.getVideoThumbnail(mediaPath)
         val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = true)
-        aztec.visualEditor.insertVideo(BitmapDrawable(resources, thumbnail), attrs)
+        aztec.visualEditor.insertVideo(thumbnail?.toDrawable(resources), attrs)
         Log.d(
             "AztecEditorActivity",
             "insertVideoAndSimulateUpload: Video inserted into editor with attributes: $attrs"
@@ -693,7 +700,7 @@ class AztecEditorActivity : AppCompatActivity(),
         }
 
         // Set initial overlay and progress drawable
-        aztec.visualEditor.setOverlay(predicate, 0, ColorDrawable(0x80000000.toInt()), Gravity.FILL)
+        aztec.visualEditor.setOverlay(predicate, 0, 0x80000000.toInt().toDrawable(), Gravity.FILL)
         aztec.visualEditor.updateElementAttributes(predicate, attrs)
 
         val progressDrawable =
@@ -1109,7 +1116,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
             R.id.undo -> {
                 Log.d("AztecEditorActivity", "onOptionsItemSelected: Undo action selected")
-                if (aztec.visualEditor.visibility == View.VISIBLE) {
+                if (aztec.visualEditor.isVisible) {
                     aztec.visualEditor.undo()
                 } else {
                     aztec.sourceEditor?.undo()
@@ -1118,7 +1125,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
             R.id.redo -> {
                 Log.d("AztecEditorActivity", "onOptionsItemSelected: Redo action selected")
-                if (aztec.visualEditor.visibility == View.VISIBLE) {
+                if (aztec.visualEditor.isVisible) {
                     aztec.visualEditor.redo()
                 } else {
                     aztec.sourceEditor?.redo()
@@ -1222,7 +1229,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
     override fun onMenuItemClick(item: MenuItem?): Boolean {
         Log.d("AztecEditorActivity", "onMenuItemClick: Called for item id: ${item?.itemId}")
-        item?.isChecked = !(item?.isChecked ?: false)
+        item?.isChecked = !item.isChecked
         return when (item?.itemId) {
             R.id.take_photo -> {
                 onCameraPhotoMediaOptionSelected()
