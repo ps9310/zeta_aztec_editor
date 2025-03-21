@@ -43,7 +43,7 @@ class ZGlideImageLoader(
         val deviceWidth = context.resources.displayMetrics.widthPixels
         getBitmapFromVectorDrawable(
             context,
-            R.drawable.image_placeholder,
+            R.drawable.media_image_placeholder,
             deviceWidth
         )?.let {
             val placeholderDrawable = it.toDrawable(context.resources)

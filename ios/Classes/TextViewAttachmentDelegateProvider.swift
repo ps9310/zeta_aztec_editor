@@ -72,7 +72,8 @@ class TextViewAttachmentDelegateProvider: NSObject, TextViewAttachmentDelegate {
         placeholderImage = placeholderImage.imageWithPaddingAndSquare(
             squareSize: squareSize,
             padding: padding,
-            backgroundColor: .lightGray
+            backgroundColor: UIColor(red: 189/255.0, green: 189/255.0, blue: 189/255.0, alpha: 0.3)
+        
         )
         
         return placeholderImage

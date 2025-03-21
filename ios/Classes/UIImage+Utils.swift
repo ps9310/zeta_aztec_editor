@@ -37,9 +37,11 @@ extension UIImage {
         // Create a square canvas.
         let rect = CGRect(origin: .zero, size: CGSize(width: squareSize, height: squareSize))
         UIGraphicsBeginImageContextWithOptions(rect.size, false, 0.0)
-        // Fill the canvas with the background color.
+        
+        // Create a rounded rectangle path with a 2-pixel corner radius.
+        let path = UIBezierPath(roundedRect: rect, cornerRadius: 2)
         backgroundColor.setFill()
-        UIRectFill(rect)
+        path.fill()
         
         // Determine the maximum drawing area available after applying padding.
         let availableSize = squareSize - 2 * padding
