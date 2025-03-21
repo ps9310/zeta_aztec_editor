@@ -27,7 +27,6 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
 </ul>
 <p>This is now very important to get your attention on this topic</p>
 <p><img src="https://picsum.photos/id/237/900/1200" class="alignnone size-full"></p>
-<p><video src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"></video></p>
   ''';
 
   @override
@@ -109,8 +108,8 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
   Future<String?> onAztecFileSelected(String filePath) async {
     debugPrint('flutter(onAztecFileSelected) : $filePath');
     await Future.delayed(const Duration(seconds: 1));
-    return 'https://picsum.photos/id/237/900/1200'; // upload success
-    // return null; // upload failed
+    //return 'https://picsum.photos/id/237/900/1200'; // upload success
+    return "The file size exceeds the 5 MB limit."; // upload failed
   }
 
   @override

@@ -884,34 +884,48 @@ extension AztecEditorController {
     
     @objc func showImagePicker() {
         view.endEditing(true)
-        // Create an action sheet to let the user choose between camera and photo library.
-        let alert = UIAlertController(title: "Add Media from?", message: nil, preferredStyle: .actionSheet)
         
-        // Action for the camera.
-        let cameraAction = UIAlertAction(title: "Camera", style: .default) { _ in
-            self.showPicker(source: .camera)
+        // First alert: Choose media type
+        let mediaTypeAlert = UIAlertController(title: "Choose Media", message: nil, preferredStyle: .actionSheet)
+        
+        let photoAction = UIAlertAction(title: "Photo", style: .default) { _ in
+            self.showSourcePicker(forMediaType: "public.image")
         }
         
-        // Action for the photo library.
-        let libraryAction = UIAlertAction(title: "Photo Library", style: .default) { _ in
-            self.showPicker(source: .photoLibrary)
+        let videoAction = UIAlertAction(title: "Video", style: .default) { _ in
+            self.showSourcePicker(forMediaType: "public.movie")
         }
         
-        // Cancel action.
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
         
-        // Add actions to the alert.
-        alert.addAction(cameraAction)
-        alert.addAction(libraryAction)
-        alert.addAction(cancelAction)
+        mediaTypeAlert.addAction(photoAction)
+        mediaTypeAlert.addAction(videoAction)
+        mediaTypeAlert.addAction(cancelAction)
         
-        // Present the alert.
-        present(alert, animated: true, completion: nil)
+        present(mediaTypeAlert, animated: true, completion: nil)
     }
     
-    // Helper method to configure and present the UIImagePickerController.
-    func showPicker(source: UIImagePickerController.SourceType) {
-        // Verify that the selected source type is available.
+    func showSourcePicker(forMediaType mediaType: String) {
+        let sourceAlert = UIAlertController(title: "Select Source", message: nil, preferredStyle: .actionSheet)
+        
+        let cameraAction = UIAlertAction(title: "Camera", style: .default) { _ in
+            self.showPicker(source: .camera, mediaType: mediaType)
+        }
+        
+        let libraryAction = UIAlertAction(title: "Library", style: .default) { _ in
+            self.showPicker(source: .photoLibrary, mediaType: mediaType)
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        
+        sourceAlert.addAction(cameraAction)
+        sourceAlert.addAction(libraryAction)
+        sourceAlert.addAction(cancelAction)
+        
+        present(sourceAlert, animated: true, completion: nil)
+    }
+    
+    func showPicker(source: UIImagePickerController.SourceType, mediaType: String) {
         guard UIImagePickerController.isSourceTypeAvailable(source) else {
             print("\(source == .camera ? "Camera" : "Photo Library") is not available on this device.")
             return
@@ -919,8 +933,7 @@ extension AztecEditorController {
         
         let picker = UIImagePickerController()
         picker.sourceType = source
-        // Use the available media types for the chosen source.
-        picker.mediaTypes = UIImagePickerController.availableMediaTypes(for: source) ?? []
+        picker.mediaTypes = [mediaType]
         picker.delegate = self
         picker.allowsEditing = false
         picker.navigationBar.isTranslucent = false

@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Outer frame -->
+    <path
+        android:fillColor="#FFBDBDBD"
+        android:pathData="M21,3H3c-1.1,0 -2,0.9 -2,2v14c0,1.1 0.9,2 2,2h18c1.1,0 2,-0.9 2,-2V5c0,-1.1 -0.9,-2 -2,-2zM21,19H3V5h18v14z" />
+    <!-- Circle using path commands -->
+    <path
+        android:fillColor="#FFBDBDBD"
+        android:pathData="M8.5,7 a1.5,1.5 0 1,0 0,3 a1.5,1.5 0 1,0 0,-3" />
+    <!-- Mountain/landscape shape -->
+    <path
+        android:fillColor="#FFBDBDBD"
+        android:pathData="M21,19l-5,-7l-4,5l-3,-4l-5,7h17z" />
+</vector>

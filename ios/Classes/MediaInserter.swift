@@ -72,8 +72,6 @@ class MediaInserter {
         }
     }
     
-    /// Presents an alert with an activity indicator, calls the upload callback,
-    /// and once the callback returns, updates or removes the attachment.
     private func showUploadAlert(for fileURL: URL,
                                  attachment: MediaAttachment,
                                  uploadCallback: @escaping (URL, @escaping (Result<String?, PigeonError>) -> Void) -> Void) {
@@ -90,42 +88,57 @@ class MediaInserter {
         
         indicator.startAnimating()
         
-        // Present the alert using a helper that gets the top view controller.
+        // Present the uploading alert.
         if let topVC = topViewController() {
             topVC.present(alert, animated: true, completion: nil)
         }
         
-        // Call the provided upload callback (e.g. onFileSelected).
+        // Call the provided upload callback.
         uploadCallback(fileURL) { [weak self] result in
             DispatchQueue.main.async {
-                alert.dismiss(animated: true, completion: nil)
-                
-                switch result {
-                    case .success(let uploadedURLString):
-                        // Remove progress.
-                        attachment.progress = nil
-                        if let urlStr = uploadedURLString, !urlStr.isEmpty, let newURL = URL(string: urlStr) {
-                            // Update the anchor link.
-                            if let attachmentRange = self?.richTextView.textStorage.ranges(forAttachment: attachment).first {
-                                self?.richTextView.setLink(newURL, inRange: attachmentRange)
+                alert.dismiss(animated: true) {
+                    switch result {
+                        case .success(let uploadedURLString):
+                            // Remove progress.
+                            attachment.progress = nil
+                            // Check for a valid URL.
+                            if let urlStr = uploadedURLString, urlStr.starts(with: "http"), let newURL = URL(string: urlStr) {
+                                // Update the anchor link.
+                                if let attachmentRange = self?.richTextView.textStorage.ranges(forAttachment: attachment).first {
+                                    self?.richTextView.setLink(newURL, inRange: attachmentRange)
+                                }
+                                
+                                // Update the source URL for images or videos.
+                                if let imageAttachment = attachment as? ImageAttachment {
+                                    imageAttachment.updateURL(newURL)
+                                } else if let videoAttachment = attachment as? VideoAttachment {
+                                    videoAttachment.updateURL(newURL, refreshAsset: false)
+                                }
+                            } else {
+                                self?.handleUploadFailure(withMessage: uploadedURLString, for: attachment)
                             }
-                            // Update the actual source URL for images.
-                            if let imageAttachment = attachment as? ImageAttachment {
-                                imageAttachment.updateURL(newURL)
-                            } else if let videoAttachment = attachment as? VideoAttachment {
-                                videoAttachment.updateURL(newURL, refreshAsset: false)
-                            }
-                        } else {
-                            // If the uploaded URL string is nil or empty, remove the media.
-                            attachment.message = NSAttributedString(string: "Upload failed")
-                        }
-                    case .failure(let error):
-                        // On failure, show an error message on the attachment.
-                        let message = NSAttributedString(string: "Upload failed: \(error.localizedDescription)", attributes: self?.attachmentTextAttributes ?? [:])
-                        attachment.message = message
+                        case .failure(_):
+                            self?.handleUploadFailure(for: attachment)
+                    }
+                    self?.richTextView.refresh(attachment, overlayUpdateOnly: true)
                 }
-                self?.richTextView.refresh(attachment, overlayUpdateOnly: true)
             }
+        }
+    }
+    
+    /// Handles upload failures by showing an error alert and removing the attachment from the editor.
+    private func handleUploadFailure(withMessage message: String? = nil, for attachment: MediaAttachment) {
+        let providedMessage = message ?? ""
+        let errorMessage = providedMessage.isEmpty ? "Upload failed. Please try again." : providedMessage
+        
+        if let topVC = topViewController() {
+            let errorAlert = UIAlertController(title: "Upload Failed", message: errorMessage, preferredStyle: .alert)
+            errorAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            topVC.present(errorAlert, animated: true, completion: nil)
+        }
+        
+        if let range = richTextView.textStorage.ranges(forAttachment: attachment).first {
+            richTextView.textStorage.replaceCharacters(in: range, with: "")
         }
     }
     

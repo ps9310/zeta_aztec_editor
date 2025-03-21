@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.graphics.scale
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.GlideUrl
@@ -14,6 +16,7 @@ import com.bumptech.glide.request.target.SizeReadyCallback
 import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.transition.Transition
 import org.wordpress.aztec.Html
+import kotlin.math.min
 
 class GlideVideoThumbnailLoader(
     private val context: Context,
@@ -48,55 +51,65 @@ class GlideVideoThumbnailLoader(
             )
         }
 
-        Glide.with(context)
-            .asBitmap()
-            .load(glideModel)
-            .fitCenter()
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .skipMemoryCache(false)
-            .into(object : Target<Bitmap> {
-                override fun onLoadStarted(placeholder: Drawable?) {
-                    callbacks.onThumbnailLoading(placeholder)
-                }
-
-                override fun onLoadFailed(errorDrawable: Drawable?) {
-                    callbacks.onThumbnailFailed()
-                }
-
-                override fun onResourceReady(
-                    resource: Bitmap,
-                    glideAnimation: Transition<in Bitmap>?
-                ) {
-                    if (resource.width < minWidth) {
-                        return callbacks.onThumbnailLoaded(
-                            BitmapDrawable(context.resources, resource.upscaleTo(minWidth))
-                        )
+        val deviceWidth = context.resources.displayMetrics.widthPixels
+        getBitmapFromVectorDrawable(
+            context,
+            R.drawable.video_placeholder,
+            deviceWidth
+        )?.let {
+            val placeholderDrawable = it.toDrawable(context.resources)
+            Glide.with(context)
+                .asBitmap()
+                .load(glideModel)
+                .fitCenter()
+                .placeholder(placeholderDrawable)
+                .error(placeholderDrawable)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .skipMemoryCache(false)
+                .into(object : Target<Bitmap> {
+                    override fun onLoadStarted(placeholder: Drawable?) {
+                        callbacks.onThumbnailLoading(placeholder)
                     }
 
-                    resource.density = DisplayMetrics.DENSITY_DEFAULT
-                    callbacks.onThumbnailLoaded(BitmapDrawable(context.resources, resource))
-                }
+                    override fun onLoadFailed(errorDrawable: Drawable?) {
+                        callbacks.onThumbnailFailed()
+                    }
 
-                override fun onLoadCleared(placeholder: Drawable?) {}
+                    override fun onResourceReady(
+                        resource: Bitmap,
+                        glideAnimation: Transition<in Bitmap>?
+                    ) {
+                        if (resource.width < minWidth) {
+                            return callbacks.onThumbnailLoaded(
+                                resource.upscaleTo(minWidth).toDrawable(context.resources)
+                            )
+                        }
 
-                override fun getSize(cb: SizeReadyCallback) {
-                    cb.onSizeReady(maxWidth, maxWidth)
-                }
+                        resource.density = DisplayMetrics.DENSITY_DEFAULT
+                        callbacks.onThumbnailLoaded(resource.toDrawable(context.resources))
+                    }
 
-                override fun removeCallback(cb: SizeReadyCallback) {}
+                    override fun onLoadCleared(placeholder: Drawable?) {}
 
-                override fun setRequest(request: Request?) {}
+                    override fun getSize(cb: SizeReadyCallback) {
+                        cb.onSizeReady(maxWidth, maxWidth)
+                    }
 
-                override fun getRequest(): Request? {
-                    return null
-                }
+                    override fun removeCallback(cb: SizeReadyCallback) {}
 
-                override fun onStart() {}
+                    override fun setRequest(request: Request?) {}
 
-                override fun onStop() {}
+                    override fun getRequest(): Request? {
+                        return null
+                    }
 
-                override fun onDestroy() {}
-            })
+                    override fun onStart() {}
+
+                    override fun onStop() {}
+
+                    override fun onDestroy() {}
+                })
+        }
     }
 
     private fun extractVideoUrl(source: String): String {

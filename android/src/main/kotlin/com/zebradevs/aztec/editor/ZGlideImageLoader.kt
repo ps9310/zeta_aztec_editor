@@ -2,9 +2,9 @@ package com.zebradevs.aztec.editor
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
+import androidx.core.graphics.drawable.toDrawable
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.GlideUrl
@@ -40,57 +40,65 @@ class ZGlideImageLoader(
         // Create a GlideUrl with the LazyHeaders
         val glideUrl = GlideUrl(source, lazyHeaders)
 
-        Glide.with(context)
-            .asBitmap()
-            .load(glideUrl)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .skipMemoryCache(false)
-            .into(object : Target<Bitmap> {
-                override fun onLoadStarted(placeholder: Drawable?) {
-                    callbacks.onImageLoading(placeholder)
-                }
-
-                override fun onLoadFailed(errorDrawable: Drawable?) {
-                    callbacks.onImageFailed()
-                }
-
-                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                    // Upscaling bitmap only for demonstration purposes.
-                    // This should probably be done somewhere more appropriate for Glide (?).
-                    if (resource.width < minWidth) {
-                        return callbacks.onImageLoaded(
-                            BitmapDrawable(
-                                context.resources,
-                                resource.upscaleTo(minWidth)
-                            )
-                        )
+        val deviceWidth = context.resources.displayMetrics.widthPixels
+        getBitmapFromVectorDrawable(
+            context,
+            R.drawable.image_placeholder,
+            deviceWidth
+        )?.let {
+            val placeholderDrawable = it.toDrawable(context.resources)
+            Glide.with(context)
+                .asBitmap()
+                .load(glideUrl)
+                .placeholder(placeholderDrawable)
+                .error(placeholderDrawable)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .skipMemoryCache(false)
+                .into(object : Target<Bitmap> {
+                    override fun onLoadStarted(placeholder: Drawable?) {
+                        callbacks.onImageLoaded(placeholderDrawable)
                     }
 
-                    // By default, BitmapFactory.decodeFile sets the bitmap's density to the device default so, we need
-                    // to correctly set the input density to 160 ourselves.
-                    resource.density = DisplayMetrics.DENSITY_DEFAULT
-                    callbacks.onImageLoaded(BitmapDrawable(context.resources, resource))
-                }
+                    override fun onLoadFailed(errorDrawable: Drawable?) {
+                        callbacks.onImageLoaded(placeholderDrawable)
+                    }
 
-                override fun onLoadCleared(placeholder: Drawable?) {}
+                    override fun onResourceReady(
+                        resource: Bitmap,
+                        transition: Transition<in Bitmap>?
+                    ) {
+                        if (resource.width < minWidth) {
+                            return callbacks.onImageLoaded(
+                                resource.upscaleTo(minWidth).toDrawable(context.resources)
+                            )
+                        }
 
-                override fun getSize(cb: SizeReadyCallback) {
-                    cb.onSizeReady(maxWidth, Target.SIZE_ORIGINAL)
-                }
+                        // By default, BitmapFactory.decodeFile sets the bitmap's density to the device default so, we need
+                        // to correctly set the input density to 160 ourselves.
+                        resource.density = DisplayMetrics.DENSITY_DEFAULT
+                        callbacks.onImageLoaded(resource.toDrawable(context.resources))
+                    }
 
-                override fun removeCallback(cb: SizeReadyCallback) {}
+                    override fun onLoadCleared(placeholder: Drawable?) {}
 
-                override fun setRequest(request: Request?) {}
+                    override fun getSize(cb: SizeReadyCallback) {
+                        cb.onSizeReady(maxWidth, Target.SIZE_ORIGINAL)
+                    }
 
-                override fun getRequest(): Request? {
-                    return null
-                }
+                    override fun removeCallback(cb: SizeReadyCallback) {}
 
-                override fun onStart() {}
+                    override fun setRequest(request: Request?) {}
 
-                override fun onStop() {}
+                    override fun getRequest(): Request? {
+                        return null
+                    }
 
-                override fun onDestroy() {}
-            })
+                    override fun onStart() {}
+
+                    override fun onStop() {}
+
+                    override fun onDestroy() {}
+                })
+        }
     }
 }

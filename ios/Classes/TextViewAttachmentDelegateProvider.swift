@@ -61,7 +61,9 @@ class TextViewAttachmentDelegateProvider: NSObject, TextViewAttachmentDelegate {
         }
         
         if #available(iOS 13.0, *) {
-            placeholderImage = placeholderImage.withTintColor(.label)
+            placeholderImage = placeholderImage.withTintColor(
+                UIColor(red: 189/255.0, green: 189/255.0, blue: 189/255.0, alpha: 1.0)
+            )
         }
         
         // Define square size as the screen's width, and set padding (adjust as needed).

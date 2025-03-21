@@ -5,6 +5,8 @@
 package com.zebradevs.aztec.editor.messages
 
 import android.util.Log
+import com.zebradevs.aztec.editor.messages.AztecEditorTheme.values
+import com.zebradevs.aztec.editor.messages.AztecToolbarOption.values
 import io.flutter.plugin.common.BasicMessageChannel
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MessageCodec

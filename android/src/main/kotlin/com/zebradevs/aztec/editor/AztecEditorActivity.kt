@@ -9,8 +9,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -21,6 +19,7 @@ import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
+import android.util.Patterns
 import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
@@ -41,8 +40,9 @@ import androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.forEach
-import com.zebradevs.aztec.editor.EditorConfig
+import androidx.core.view.isVisible
 import com.zebradevs.aztec.editor.messages.AztecEditorTheme
 import com.zebradevs.aztec.editor.messages.AztecToolbarOption
 import org.wordpress.android.util.AppLog
@@ -73,8 +73,6 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.Random
-import androidx.core.view.isVisible
-import androidx.core.graphics.drawable.toDrawable
 
 class AztecEditorActivity : AppCompatActivity(),
     AztecText.OnImeBackListener,
@@ -159,7 +157,7 @@ class AztecEditorActivity : AppCompatActivity(),
         videoOptionLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 Log.d("AztecEditorActivity", "videoOptionLauncher: Received result: $result")
-                if (result.resultCode == Activity.RESULT_OK) {
+                if (result.resultCode == RESULT_OK) {
                     Log.d("AztecEditorActivity", "Video result received: ${result.data}")
                     handleVideoResult(result.data)
                 } else {
@@ -170,7 +168,7 @@ class AztecEditorActivity : AppCompatActivity(),
         imageSelectLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 Log.d("AztecEditorActivity", "imageSelectLauncher: Received result: $result")
-                if (result.resultCode == Activity.RESULT_OK) {
+                if (result.resultCode == RESULT_OK) {
                     Log.d("AztecEditorActivity", "Gallery photo result received: ${result.data}")
                     handleGalleryPhotoResult(result.data)
                 } else {
@@ -181,7 +179,7 @@ class AztecEditorActivity : AppCompatActivity(),
         imageCaptureLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 Log.d("AztecEditorActivity", "imageCaptureLauncher: Received result: $result")
-                if (result.resultCode == Activity.RESULT_OK) {
+                if (result.resultCode == RESULT_OK) {
                     Log.d("AztecEditorActivity", "Camera photo result received")
                     handleCameraPhotoResult()
                 } else {
@@ -651,7 +649,7 @@ class AztecEditorActivity : AppCompatActivity(),
             "AztecEditorActivity",
             "insertImageAndSimulateUpload: Image inserted into editor with attributes: $attrs"
         )
-        simulateMediaUpload(id, attrs)  // simulates upload progress and updates overlays
+        initiateMediaUpload(id, attrs)  // simulates upload progress and updates overlays
         aztec.toolbar.toggleMediaToolbar()
         Log.d("AztecEditorActivity", "insertImageAndSimulateUpload: Media toolbar toggled")
     }
@@ -665,7 +663,7 @@ class AztecEditorActivity : AppCompatActivity(),
             "AztecEditorActivity",
             "insertVideoAndSimulateUpload: Video inserted into editor with attributes: $attrs"
         )
-        simulateMediaUpload(id, attrs)
+        initiateMediaUpload(id, attrs)
         aztec.toolbar.toggleMediaToolbar()
         Log.d("AztecEditorActivity", "insertVideoAndSimulateUpload: Media toolbar toggled")
     }
@@ -689,7 +687,7 @@ class AztecEditorActivity : AppCompatActivity(),
         return Pair(id, attrs)
     }
 
-    private fun simulateMediaUpload(id: String, attrs: AztecAttributes) {
+    private fun initiateMediaUpload(id: String, attrs: AztecAttributes) {
         Log.d(
             "AztecEditorActivity",
             "simulateMediaUpload: Started for media id: $id, mediaPath: $mediaPath"
@@ -699,7 +697,7 @@ class AztecEditorActivity : AppCompatActivity(),
             override fun matches(attrs: Attributes): Boolean = attrs.getValue("id") == id
         }
 
-        // Set initial overlay and progress drawable
+        // Set initial overlay and progress drawable.
         aztec.visualEditor.setOverlay(predicate, 0, 0x80000000.toInt().toDrawable(), Gravity.FILL)
         aztec.visualEditor.updateElementAttributes(predicate, attrs)
 
@@ -757,18 +755,21 @@ class AztecEditorActivity : AppCompatActivity(),
                     "AztecEditorActivity",
                     "simulateMediaUpload: Upload success, returned path: $returnedPath"
                 )
-                if (!returnedPath.isNullOrEmpty()) {
+                // Validate the returned URL.
+                if (!returnedPath.isNullOrEmpty() && Patterns.WEB_URL.matcher(returnedPath)
+                        .matches()
+                ) {
                     attrs.removeAttribute(attrs.getIndex("uploading"))
                     aztec.visualEditor.clearOverlays(predicate)
                     val videoIndex = attrs.getIndex("video")
                     if (videoIndex != -1) {
                         attrs.removeAttribute(videoIndex)
                         val playDrawable = AppCompatResources.getDrawable(
-                            this@AztecEditorActivity, android.R.drawable.ic_media_play
+                            this@AztecEditorActivity,
+                            android.R.drawable.ic_media_play
                         )
                         aztec.visualEditor.setOverlay(predicate, 0, playDrawable, Gravity.CENTER)
                     }
-
                     val index = attrs.getIndex("src")
                     if (index != -1) attrs.removeAttribute(index)
                     attrs.setValue("src", returnedPath)
@@ -780,18 +781,16 @@ class AztecEditorActivity : AppCompatActivity(),
                 } else {
                     Log.d(
                         "AztecEditorActivity",
-                        "simulateMediaUpload: Upload returned empty string; removing media"
+                        "simulateMediaUpload: Upload returned an invalid or empty URL; removing media"
                     )
-                    aztec.visualEditor.clearOverlays(predicate)
-                    aztec.visualEditor.removeMedia(predicate)
+                    handleUploadFailure(predicate, returnedPath.orEmpty())
                 }
             } else {
                 Log.d(
                     "AztecEditorActivity",
                     "simulateMediaUpload: Upload failed. Error: ${result.exceptionOrNull()}"
                 )
-                aztec.visualEditor.clearOverlays(predicate)
-                aztec.visualEditor.removeMedia(predicate)
+                handleUploadFailure(predicate, result.exceptionOrNull()?.toString().orEmpty())
             }
 
             aztec.visualEditor.refreshText()
@@ -822,6 +821,26 @@ class AztecEditorActivity : AppCompatActivity(),
 
         aztec.visualEditor.refreshText()
         Log.d("AztecEditorActivity", "simulateMediaUpload: Completed for media id: $id")
+    }
+
+    /**
+     * Handles upload failures by showing an alert dialog with an error message and removing the media.
+     *
+     * @param predicate The predicate to identify the media element.
+     * @param message The error message to display. If null or empty, a generic message is used.
+     */
+    private fun handleUploadFailure(predicate: AztecText.AttributePredicate, message: String?) {
+        val errorMessage =
+            if (message.isNullOrEmpty()) "Upload failed. Please try again." else message
+        runOnUiThread {
+            AlertDialog.Builder(this)
+                .setTitle("Upload Failed")
+                .setMessage(errorMessage)
+                .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                .show()
+        }
+        aztec.visualEditor.clearOverlays(predicate)
+        aztec.visualEditor.removeMedia(predicate)
     }
 
     private fun showMediaProgressBar() {
