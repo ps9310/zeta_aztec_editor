@@ -81,6 +81,8 @@ abstract class AztecEditorApi {
 abstract class AztecFlutterApi {
   @async
   String? onAztecFileSelected(String filePath);
+
   void onAztecFileDeleted(String filePath);
+
   void onAztecHtmlChanged(String data);
 }

@@ -1,6 +1,6 @@
 name: zeta_aztec_editor
 description: "Flutter plugin that bridges to native Aztec editors on iOS and Android."
-version: 0.0.1
+version: 0.0.2
 
 environment:
   sdk: ^3.5.3

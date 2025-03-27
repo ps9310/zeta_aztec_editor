@@ -1,4 +1,7 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 
 import 'package:zeta_aztec_editor/zeta_aztec_editor.dart';
@@ -8,14 +11,42 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class EditorConfigSettings {
+  String placeholder;
+  String title;
+  int characterLimit;
+  String authToken;
+  bool simulateUploadSuccess;
+
+  EditorConfigSettings({
+    required this.placeholder,
+    required this.title,
+    required this.characterLimit,
+    required this.authToken,
+    required this.simulateUploadSuccess,
+  });
+}
+
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      title: 'Plugin Example App',
+      home: EditorPage(),
+    );
+  }
 }
 
-class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
+class EditorPage extends StatefulWidget {
+  const EditorPage({super.key});
+
+  @override
+  _EditorPageState createState() => _EditorPageState();
+}
+
+class _EditorPageState extends State<EditorPage> implements ZetaAztecEditorCallbacks {
   String _html = '''
   <h3>Heading</h3>
 <p>A paragraph with <strong>strong</strong>, <em>emphasized</em> text. </p>
@@ -29,21 +60,56 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
 <p><img src="https://picsum.photos/id/237/900/1200" class="alignnone size-full"></p>
   ''';
 
+  EditorConfigSettings _configSettings = EditorConfigSettings(
+    placeholder: 'Hint from flutter...',
+    title: 'Add Instructions',
+    characterLimit: 150,
+    authToken: 'lksjdhfisdujkmspodfnjdkg',
+    simulateUploadSuccess: true,
+  );
+
+  late TextEditingController _placeholderController;
+  late TextEditingController _titleController;
+  late TextEditingController _characterLimitController;
+  late TextEditingController _authHeaderController;
+
   @override
   void initState() {
     super.initState();
-    _launchEditor(AztecEditorTheme.system);
+    _placeholderController = TextEditingController(text: _configSettings.placeholder);
+    _titleController = TextEditingController(text: _configSettings.title);
+    _characterLimitController = TextEditingController(text: _configSettings.characterLimit.toString());
+    _authHeaderController = TextEditingController(text: _configSettings.authToken);
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
+  @override
+  void dispose() {
+    _placeholderController.dispose();
+    _titleController.dispose();
+    _characterLimitController.dispose();
+    _authHeaderController.dispose();
+    super.dispose();
+  }
+
   Future<void> _launchEditor(AztecEditorTheme theme) async {
+    final int charLimit = int.tryParse(_characterLimitController.text) ?? 30;
+
+    _configSettings = EditorConfigSettings(
+      placeholder: _placeholderController.text,
+      title: _titleController.text,
+      characterLimit: charLimit,
+      authToken: _authHeaderController.text,
+      simulateUploadSuccess: _configSettings.simulateUploadSuccess,
+    );
+
     final config = AztecEditorConfig(
-      placeholder: 'Hint from flutter...',
+      placeholder: _configSettings.placeholder,
       theme: theme,
-      title: 'Add Instructions',
+      title: _configSettings.title,
+      characterLimit: _configSettings.characterLimit,
       toolbarOptions: AztecToolbarOption.values,
       authHeaders: {
-        'Authorization': 'Platform nNvlM9_zuM2bfewtzb7y6jbpTLOl',
+        'Authorization': 'Bearer ${_configSettings.authToken}',
       },
     );
 
@@ -58,67 +124,146 @@ class _MyAppState extends State<MyApp> implements ZetaAztecEditorCallbacks {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
-        body: Column(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Editor Page'),
+      ),
+      drawer: Drawer(
+        child: Column(
           children: [
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: HtmlWidget(
-                  _html,
-                  renderMode: RenderMode.listView,
-                ),
-              ),
-            ),
-            SafeArea(
-              child: Row(
+              child: ListView(
+                padding: EdgeInsets.zero,
                 children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => _launchEditor(AztecEditorTheme.system),
-                      child: const Text('System'),
+                  DrawerHeader(
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
+                    child: Text(
+                      'Editor Configuration',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 24),
                     ),
                   ),
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => _launchEditor(AztecEditorTheme.light),
-                      child: const Text('Light'),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TextField(
+                      controller: _placeholderController,
+                      decoration: const InputDecoration(labelText: 'Editor Placeholder'),
                     ),
                   ),
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => _launchEditor(AztecEditorTheme.dark),
-                      child: const Text('Dark'),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TextField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(labelText: 'Editor Title'),
                     ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TextField(
+                      controller: _characterLimitController,
+                      decoration: const InputDecoration(labelText: 'Character Limit'),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TextField(
+                      controller: _authHeaderController,
+                      decoration: const InputDecoration(labelText: 'Auth Token'),
+                    ),
+                  ),
+                  SwitchListTile(
+                    title: const Text('Upload Success'),
+                    value: _configSettings.simulateUploadSuccess,
+                    onChanged: (val) {
+                      setState(() {
+                        _configSettings.simulateUploadSuccess = val;
+                      });
+                    },
                   ),
                 ],
               ),
-            )
+            ),
+            ListTile(
+              title: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Done'),
+              ),
+            ),
           ],
         ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: HtmlWidget(
+                _html,
+                renderMode: RenderMode.listView,
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).maybePop();
+                      _launchEditor(AztecEditorTheme.system);
+                    },
+                    child: const Text('System'),
+                  ),
+                ),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).maybePop();
+                      _launchEditor(AztecEditorTheme.light);
+                    },
+                    child: const Text('Light'),
+                  ),
+                ),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).maybePop();
+                      _launchEditor(AztecEditorTheme.dark);
+                    },
+                    child: const Text('Dark'),
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
       ),
     );
   }
 
   @override
   Future<String?> onAztecFileSelected(String filePath) async {
-    debugPrint('flutter(onAztecFileSelected) : $filePath');
+    debugPrint('EditorPage:onAztecFileSelected: $filePath');
     await Future.delayed(const Duration(seconds: 1));
-    //return 'https://picsum.photos/id/237/900/1200'; // upload success
-    return "The file size exceeds the 5 MB limit."; // upload failed
+    if (_configSettings.simulateUploadSuccess) {
+      return 'https://picsum.photos/900/1200?random=${DateTime.now().millisecondsSinceEpoch}';
+    } else {
+      return "The file size exceeds the 5 MB limit.";
+    }
   }
 
   @override
   void onAztecFileDeleted(String filePath) {
-    debugPrint('flutter(onAztecFileDeleted) : $filePath');
+    debugPrint('EditorPage:onAztecFileDeleted: $filePath');
   }
 
   @override
   void onAztecHtmlChanged(String data) {
-    debugPrint('flutter(onAztecHtmlChanged) : $data');
+    debugPrint('EditorPage:onAztecHtmlChanged: $data');
   }
 }

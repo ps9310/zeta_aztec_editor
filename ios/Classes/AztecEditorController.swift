@@ -9,6 +9,16 @@ enum EditorDemoControllerError : Error {
     case cancelled
 }
 
+class CustomFormatBar: Aztec.FormatBar {
+    override var intrinsicContentSize: CGSize {
+        return CGSize(width: UIView.noIntrinsicMetric, height: 45)
+    }
+    
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+        return CGSize(width: size.width, height: 45)
+    }
+}
+
 class AztecEditorController: UIViewController {
     
     // Define your debounce delay (in seconds)
@@ -193,6 +203,8 @@ class AztecEditorController: UIViewController {
         navigationController?.navigationBar.isTranslucent = false
         view.addSubview(editorView)
         
+        editorView.translatesAutoresizingMaskIntoConstraints = false
+        
         editorView.richTextView.textContainer.lineFragmentPadding = 0
         // color setup
         if #available(iOS 13.0, *) {
@@ -213,7 +225,6 @@ class AztecEditorController: UIViewController {
         registerAttachmentImageProviders()
         
         editorView.setHTML(initialHtml ?? "")
-        editorView.richTextView.inputAccessoryView = formatBar
     }
     
     
@@ -550,6 +561,7 @@ extension AztecEditorController : UITextViewDelegate {
         switch textView {
             case richTextView:
                 formatBar.enabled = true
+                editorView.richTextView.inputAccessoryView = formatBar
             case htmlTextView:
                 formatBar.enabled = false
                 let htmlButton = formatBar.items.first(where: { $0.identifier == FormattingIdentifier.sourcecode.rawValue })
@@ -570,7 +582,22 @@ extension AztecEditorController : UITextViewDelegate {
     }
     
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
-        return true
+        if let characterLimit = config.characterLimit, characterLimit > 0 {
+            if text.isEmpty {
+                return true
+            }
+            
+            // Get the current text, or use empty string if nil
+            let currentText = textView.text ?? ""
+            // Determine the range in the current text corresponding to the change
+            guard let stringRange = Range(range, in: currentText) else { return false }
+            // Create the updated text string
+            let updatedText = currentText.replacingCharacters(in: stringRange, with: text)
+            // Allow change if updated text is within the limit
+            return updatedText.count <= characterLimit
+        } else {
+            return true
+        }
     }
 }
 
@@ -956,23 +983,23 @@ extension AztecEditorController {
     }
     
     func createToolbar() -> Aztec.FormatBar {
-        
         var toolbarOptions = Array(config.toolbarOptions ?? [])
         toolbarOptions.removeAll { option in
             option == .image || option == .video
         }
         
         
-        
-        let toolbar = Aztec.FormatBar()
-        toolbar.backgroundColor = UIColor.systemGroupedBackground
-        toolbar.tintColor = UIColor.secondaryLabel
+        let toolbar = CustomFormatBar()
+        toolbar.backgroundColor = UIColor.systemBackground
+        toolbar.tintColor = UIColor.label
         toolbar.highlightedTintColor = UIColor.systemBlue
         toolbar.selectedTintColor = UIColor.systemBlue
         toolbar.disabledTintColor = .systemGray4
         toolbar.dividerTintColor = UIColor.separator
         toolbar.overflowToggleIcon = UIImage(systemName: "ellipsis")!
-        toolbar.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 44.0)
+        
+        // Set the frame height to 45 to match intrinsicContentSize
+        toolbar.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 45)
         toolbar.formatter = self
         toolbar.overflowToolbar(expand: true)
         toolbar.autoresizingMask = [.flexibleHeight]
@@ -982,8 +1009,7 @@ extension AztecEditorController {
             toolbar.leadingItem = mediaItem
         }
         
-        let scrollableItems =  toolbarOptions.map(aztecIdentifier(from:)).map(makeToolbarButton(identifier:))
-        
+        let scrollableItems = toolbarOptions.map(aztecIdentifier(from:)).map(makeToolbarButton(identifier:))
         toolbar.setDefaultItems(scrollableItems)
         
         toolbar.barItemHandler = { [weak self] item in

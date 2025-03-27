@@ -17,6 +17,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.text.Editable
+import android.text.InputFilter
 import android.text.TextWatcher
 import android.util.Log
 import android.util.Patterns
@@ -129,7 +130,7 @@ class AztecEditorActivity : AppCompatActivity(),
     private lateinit var videoOptionLauncher: ActivityResultLauncher<Intent>
     private lateinit var imageCaptureLauncher: ActivityResultLauncher<Intent>
     private lateinit var imageSelectLauncher: ActivityResultLauncher<Intent>
-    private val DEBOUNCE_DELAY: Long = 750
+    private val DEBOUNCE_DELAY: Long = 300
     private val debounceHandler = Handler(Looper.getMainLooper())
     private var debounceRunnable: Runnable? = null
     private var editorConfig: EditorConfig? = null
@@ -469,6 +470,17 @@ class AztecEditorActivity : AppCompatActivity(),
             }
         )
 
+        editorConfig?.characterLimit?.let {
+            if (it > 0) {
+                if (aztec.visualEditor.text.isEmpty() || it >= aztec.visualEditor.text.length) {
+                    aztec.visualEditor.filters = arrayOf(InputFilter.LengthFilter(it.toInt()))
+                } else {
+                    aztec.visualEditor.filters =
+                        arrayOf(InputFilter.LengthFilter(aztec.visualEditor.text.length))
+                }
+            }
+        }
+
         if (savedInstanceState == null) {
             Log.d("AztecEditorActivity", "setupAztecEditor: Initializing source editor history")
             aztec.initSourceEditorHistory()
@@ -494,6 +506,10 @@ class AztecEditorActivity : AppCompatActivity(),
                     "setupAztecToolbar: Set tint for buttonId ${action.buttonId}"
                 )
             }
+        }
+
+        toolbar.findViewById<View>(org.wordpress.aztec.R.id.format_bar_button_media_expanded)?.let {
+            it.backgroundTintList = stateList
         }
 
         // Set the color state list for the vertical divider and hide/show it based on the options
@@ -571,14 +587,13 @@ class AztecEditorActivity : AppCompatActivity(),
                     "handleCameraPhotoResult: Image copied to internal storage: ${destinationFile.absolutePath}"
                 )
                 mediaPath = destinationFile.absolutePath
-                insertImageAndSimulateUpload(destinationFile.absolutePath)
+                insertImageAndInitiateUpload(destinationFile.absolutePath)
             } catch (e: Exception) {
                 Log.e(
                     "AztecEditorActivity",
                     "handleCameraPhotoResult: Failed to copy image to internal storage",
                     e
                 )
-                ToastUtils.showToast(this, "Failed to copy image to internal storage!")
             }
         } else {
             Log.d(
@@ -599,7 +614,7 @@ class AztecEditorActivity : AppCompatActivity(),
                     "handleGalleryPhotoResult: Gallery photo copied to internal storage: $internalPath"
                 )
                 mediaPath = internalPath
-                insertImageAndSimulateUpload(internalPath)
+                insertImageAndInitiateUpload(internalPath)
             } else {
                 Log.e(
                     "AztecEditorActivity",
@@ -621,7 +636,7 @@ class AztecEditorActivity : AppCompatActivity(),
                     "handleVideoResult: Video copied to internal storage: $internalPath"
                 )
                 mediaPath = internalPath
-                insertVideoAndSimulateUpload(internalPath)
+                insertVideoAndInitiateUpload(internalPath)
             } else {
                 Log.e(
                     "AztecEditorActivity",
@@ -632,7 +647,7 @@ class AztecEditorActivity : AppCompatActivity(),
         }
     }
 
-    private fun insertImageAndSimulateUpload(mediaPath: String) {
+    private fun insertImageAndInitiateUpload(mediaPath: String) {
         Log.d("AztecEditorActivity", "insertImageAndSimulateUpload: Started for image: $mediaPath")
         val thumbnail = ZThumbnailUtils.getImageThumbnail(
             mediaPath,
@@ -654,7 +669,7 @@ class AztecEditorActivity : AppCompatActivity(),
         Log.d("AztecEditorActivity", "insertImageAndSimulateUpload: Media toolbar toggled")
     }
 
-    private fun insertVideoAndSimulateUpload(mediaPath: String) {
+    private fun insertVideoAndInitiateUpload(mediaPath: String) {
         Log.d("AztecEditorActivity", "insertVideoAndSimulateUpload: Started for video: $mediaPath")
         val thumbnail = ZThumbnailUtils.getVideoThumbnail(mediaPath)
         val (id, attrs) = generateAttributesForMedia(mediaPath, isVideo = true)

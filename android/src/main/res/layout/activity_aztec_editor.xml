@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aztec="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -61,12 +60,12 @@
         </FrameLayout>
     </ScrollView>
 
-    <!-- Bottom Aztec Formatting Toolbar -->
     <org.wordpress.aztec.toolbar.AztecToolbar
         android:id="@+id/formatting_toolbar"
         android:layout_width="match_parent"
         android:layout_height="@dimen/aztec_format_bar_height"
         android:layout_alignParentBottom="true"
+        android:scrollbars="none"
         aztec:advanced="false"
         aztec:toolbarBorderColor="@color/aztec_toolbar_border"
         aztec:toolbarIconDisabledColor="@color/aztec_icon_disabled_color"
