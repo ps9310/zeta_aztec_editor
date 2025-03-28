@@ -197,6 +197,19 @@ class AztecEditorActivity : AppCompatActivity(),
             Log.d("AztecEditorActivity", "onStart: Setting up AztecToolbar")
             setupAztecToolbar(toolbar)
         }
+
+        editorConfig?.characterLimit?.let { limit ->
+            if (limit > 0) {
+                aztec.visualEditor.post {
+                    val text = aztec.visualEditor.text
+                    // Delete if text is longer than the character limit.
+                    if (text.isNotEmpty() && text.length > limit) {
+                        text.delete(limit.toInt(), text.length)
+                    }
+                    aztec.visualEditor.filters = arrayOf(InputFilter.LengthFilter(limit.toInt()))
+                }
+            }
+        }
     }
 
     override fun onPause() {
@@ -469,17 +482,6 @@ class AztecEditorActivity : AppCompatActivity(),
                 }
             }
         )
-
-        editorConfig?.characterLimit?.let {
-            if (it > 0) {
-                if (aztec.visualEditor.text.isEmpty() || it >= aztec.visualEditor.text.length) {
-                    aztec.visualEditor.filters = arrayOf(InputFilter.LengthFilter(it.toInt()))
-                } else {
-                    aztec.visualEditor.filters =
-                        arrayOf(InputFilter.LengthFilter(aztec.visualEditor.text.length))
-                }
-            }
-        }
 
         if (savedInstanceState == null) {
             Log.d("AztecEditorActivity", "setupAztecEditor: Initializing source editor history")

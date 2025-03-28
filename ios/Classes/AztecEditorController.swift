@@ -354,6 +354,9 @@ class AztecEditorController: UIViewController {
         let nc = NotificationCenter.default
         nc.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
         nc.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+        if let characterLimit = config.characterLimit, characterLimit > 0 {
+            enforceCharacterLimitAttributed(for: richTextView, limit: Int(characterLimit))
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -391,6 +394,13 @@ class AztecEditorController: UIViewController {
             editorView.topAnchor.constraint(equalTo: view.topAnchor),
             editorView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+    }
+    
+    func enforceCharacterLimitAttributed(for textView: UITextView, limit: Int) {
+        guard let attributedText = textView.attributedText, attributedText.length > limit else { return }
+        let range = NSRange(location: 0, length: limit)
+        let truncated = attributedText.attributedSubstring(from: range)
+        textView.attributedText = truncated
     }
     
     private func configureDefaultProperties(for textView: TextView, accessibilityLabel: String) {
