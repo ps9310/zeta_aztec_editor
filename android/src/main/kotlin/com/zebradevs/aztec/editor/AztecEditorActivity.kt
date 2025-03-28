@@ -1342,7 +1342,10 @@ class AztecEditorActivity : AppCompatActivity(),
                     0 -> addNewLine(true, url)
                     1 -> addNewLine(false, url)
                     2 -> showDeleteConfirmation(url)
-                    3 -> dialog.dismiss()
+                    3 -> {
+                        dialog.dismiss()
+                        showKeyboard(aztec.visualEditor)
+                    }
                 }
             }
             .show()
@@ -1364,7 +1367,6 @@ class AztecEditorActivity : AppCompatActivity(),
             "addNewLine: Found ${mediaSpans.size} media spans for URL: $url"
         )
 
-        // For each matching media span, insert a newline.
         mediaSpans.forEach { mediaSpan ->
             val start = editableText.getSpanStart(mediaSpan)
             val end = editableText.getSpanEnd(mediaSpan)
@@ -1375,6 +1377,8 @@ class AztecEditorActivity : AppCompatActivity(),
                     "AztecEditorActivity",
                     "addNewLine: Inserted newline above media span at position $start"
                 )
+                // Set the cursor to the beginning of the new line.
+                aztec.visualEditor.setSelection(start)
             } else {
                 // Insert newline after the span.
                 editableText.insert(end, "\n")
@@ -1382,11 +1386,14 @@ class AztecEditorActivity : AppCompatActivity(),
                     "AztecEditorActivity",
                     "addNewLine: Inserted newline below media span at position $end"
                 )
+                // For below, move the cursor to the beginning of the new line (after the inserted newline).
+                aztec.visualEditor.setSelection(end + 1)
             }
         }
+
+        showKeyboard(aztec.visualEditor)
     }
 
-    // This method displays a confirmation dialog with "Delete" and "Cancel" options.
     private fun showDeleteConfirmation(url: String) {
         Log.d("AztecEditorActivity", "showDeleteConfirmation: Called for URL: $url")
         AlertDialog.Builder(this)
@@ -1398,22 +1405,29 @@ class AztecEditorActivity : AppCompatActivity(),
                     "showDeleteConfirmation: Delete confirmed for URL: $url"
                 )
                 deleteMedia(url)
+                showKeyboard(aztec.visualEditor)
             }
             .setNegativeButton("Cancel") { _, _ ->
                 Log.d(
                     "AztecEditorActivity",
                     "showDeleteConfirmation: Delete canceled for URL: $url"
                 )
+                showKeyboard(aztec.visualEditor)
             }
             .show()
     }
 
-    // Stub function to handle media deletion logic.
     private fun deleteMedia(url: String) {
         Log.d("AztecEditorActivity", "deleteMedia: Called for URL: $url")
         aztec.visualEditor.removeMedia { attrs ->
             attrs.getValue("src") == url
         }
+    }
+
+    private fun showKeyboard(view: View) {
+        view.requestFocus()
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
     }
     // endregion
 
@@ -1471,7 +1485,9 @@ class AztecEditorActivity : AppCompatActivity(),
 }
 
 fun Context.dismissKeyboard(view: View) {
-    Log.d("AztecEditorActivity", "dismissKeyboard: Called")
-    val imm = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
-    imm.hideSoftInputFromWindow(view.windowToken, 0)
+    runOnUi {
+        Log.d("AztecEditorActivity", "dismissKeyboard: Called")
+        val imm = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(view.windowToken, 0)
+    }
 }
