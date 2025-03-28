@@ -249,42 +249,84 @@ private extension TextViewAttachmentDelegateProvider {
 
 extension TextViewAttachmentDelegateProvider {
     func displayActions(in textView: TextView, forAttachment attachment: MediaAttachment, position: CGPoint) {
-        let mediaID = attachment.identifier
+        // Hide the keyboard before presenting the options.
+        textView.resignFirstResponder()
+        
+        // Convert the tapped CGPoint into a text position.
+        guard let actionCursorPosition = textView.closestPosition(to: position) else { return }
+        
         let title = NSLocalizedString("Media Options", comment: "Title for media options")
         let alertController = UIAlertController(title: title, message: nil, preferredStyle: .actionSheet)
         
-        // Dismiss action
+        // Dismiss action (cancel)
         let dismissAction = UIAlertAction(title: NSLocalizedString("Dismiss", comment: "Dismiss options"), style: .cancel) { _ in
             self.resetMediaAttachmentOverlay(attachment)
             textView.refresh(attachment)
+            // Set the cursor to the tapped action position and show the keyboard again.
+            if let newRange = textView.textRange(from: actionCursorPosition, to: actionCursorPosition) {
+                textView.selectedTextRange = newRange
+            }
+            textView.becomeFirstResponder()
         }
         alertController.addAction(dismissAction)
         
         // "Add new line above" action
         let addNewLineAbove = UIAlertAction(title: NSLocalizedString("Add new line above", comment: "Insert a new line above"), style: .default) { [weak self] _ in
-            self?.addNewLine(above: true, for: attachment, in: textView)
+            alertController.dismiss(animated: true) {
+                guard let self = self else { return }
+                self.addNewLine(above: true, for: attachment, in: textView)
+            }
         }
         alertController.addAction(addNewLineAbove)
         
         // "Add new line below" action
         let addNewLineBelow = UIAlertAction(title: NSLocalizedString("Add new line below", comment: "Insert a new line below"), style: .default) { [weak self] _ in
-            self?.addNewLine(above: false, for: attachment, in: textView)
+            alertController.dismiss(animated: true) {
+                guard let self = self else { return }
+                self.addNewLine(above: false, for: attachment, in: textView)
+            }
         }
         alertController.addAction(addNewLineBelow)
         
-        // "Remove Media" action with confirmation
+        // "Remove Media" action with confirmation.
         let deleteAction = UIAlertAction(title: NSLocalizedString("Remove Media", comment: "Delete media"), style: .destructive) { [weak self] _ in
-            guard let self = self else { return }
-            let confirmAlert = UIAlertController(title: NSLocalizedString("Confirm Deletion", comment: ""),
-                                                 message: NSLocalizedString("Are you sure you want to delete this media?", comment: ""),
-                                                 preferredStyle: .alert)
-            confirmAlert.addAction(UIAlertAction(title: NSLocalizedString("Delete", comment: ""),
-                                                 style: .destructive, handler: { _ in
-                textView.remove(attachmentID: mediaID)
-            }))
-            confirmAlert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""),
-                                                 style: .cancel, handler: nil))
-            self.baseController.present(confirmAlert, animated: true, completion: nil)
+            alertController.dismiss(animated: true) {
+                guard let self = self else { return }
+                let confirmAlert = UIAlertController(title: NSLocalizedString("Confirm Deletion", comment: ""),
+                                                     message: NSLocalizedString("Are you sure you want to delete this media?", comment: ""),
+                                                     preferredStyle: .alert)
+                // "Delete" action.
+                confirmAlert.addAction(UIAlertAction(title: NSLocalizedString("Delete", comment: ""),
+                                                     style: .destructive, handler: { _ in
+                    var newOffset = 0
+                    if let mutableAttributedText = textView.attributedText.mutableCopy() as? NSMutableAttributedString {
+                        let fullRange = NSRange(location: 0, length: mutableAttributedText.length)
+                        mutableAttributedText.enumerateAttribute(.attachment, in: fullRange, options: []) { (value, range, stop) in
+                            if let mediaAttachment = value as? MediaAttachment,
+                               mediaAttachment.identifier == attachment.identifier {
+                                newOffset = range.location
+                                stop.pointee = true
+                            }
+                        }
+                    }
+                    // Remove the attachment.
+                    textView.remove(attachmentID: attachment.identifier)
+                    // Set the cursor to the media's former position (if found), otherwise fallback to the tapped position.
+                    if let newPosition = textView.position(from: textView.beginningOfDocument, offset: newOffset) {
+                        textView.selectedTextRange = textView.textRange(from: newPosition, to: newPosition)
+                    } else {
+                        textView.selectedTextRange = textView.textRange(from: actionCursorPosition, to: actionCursorPosition)
+                    }
+                    textView.becomeFirstResponder()
+                }))
+                // "Cancel" action in the confirmation alert.
+                confirmAlert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""),
+                                                     style: .cancel, handler: { _ in
+                    textView.selectedTextRange = textView.textRange(from: actionCursorPosition, to: actionCursorPosition)
+                    textView.becomeFirstResponder()
+                }))
+                self.baseController.present(confirmAlert, animated: true, completion: nil)
+            }
         }
         alertController.addAction(deleteAction)
         
@@ -293,14 +335,14 @@ extension TextViewAttachmentDelegateProvider {
         alertController.popoverPresentationController?.permittedArrowDirections = .any
         baseController.present(alertController, animated: true, completion: nil)
     }
-
+    
     private func addNewLine(above: Bool, for attachment: MediaAttachment, in textView: TextView) {
         // Obtain a mutable copy of the text view's attributed text.
         guard let mutableAttributedText = textView.attributedText.mutableCopy() as? NSMutableAttributedString else { return }
         let fullRange = NSRange(location: 0, length: mutableAttributedText.length)
         var attachmentRange: NSRange?
         
-        // Enumerate the text to find the range where this media attachment is located.
+        // Find the range where this media attachment is located.
         mutableAttributedText.enumerateAttribute(.attachment, in: fullRange, options: []) { (value, range, stop) in
             if let mediaAttachment = value as? MediaAttachment,
                mediaAttachment.identifier == attachment.identifier {
@@ -309,18 +351,24 @@ extension TextViewAttachmentDelegateProvider {
             }
         }
         
-        // If we found the attachment's range, insert a newline.
+        // If the attachment's range is found, insert a newline.
         guard let range = attachmentRange else { return }
         let newline = NSAttributedString(string: "\n")
-        if above {
-            mutableAttributedText.insert(newline, at: range.location)
-        } else {
-            mutableAttributedText.insert(newline, at: range.location + range.length)
-        }
+        let insertionIndex = above ? range.location : range.location + range.length
+        mutableAttributedText.insert(newline, at: insertionIndex)
         
         // Update the text view with the new content.
         textView.attributedText = mutableAttributedText
         textView.refresh(attachment)
+        
+        // For a new line above, set the cursor at the insertion index;
+        // for a new line below, set it after the inserted newline.
+        let newCursorOffset: Int = above ? insertionIndex : insertionIndex + newline.length
+        if let newPosition = textView.position(from: textView.beginningOfDocument, offset: newCursorOffset) {
+            textView.selectedTextRange = textView.textRange(from: newPosition, to: newPosition)
+        }
+        // Show the keyboard after the action.
+        textView.becomeFirstResponder()
     }
 }
 
