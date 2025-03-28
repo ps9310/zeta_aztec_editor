@@ -25,6 +25,7 @@ class AztecEditorController: UIViewController {
     private let debounceDelay: TimeInterval = 0.3
     // Timer to schedule the debounce update
     private var debounceTimer: Timer?
+    private var mediaInsertRange: NSRange?
     
     fileprivate(set) lazy var formatBar: Aztec.FormatBar = {
         return self.createToolbar()
@@ -150,7 +151,7 @@ class AztecEditorController: UIViewController {
         self.completion = completion
         super.init(nibName: nil, bundle: nil)
     }
-
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -186,7 +187,7 @@ class AztecEditorController: UIViewController {
         navigationItem.rightBarButtonItems = [doneButton, redoButton, undoButton]
         
         navigationItem.title = nil
-
+        
         setupNavigationBarTheme(isDarkTheme: config.theme == .dark)
         // ---------------------------------
         
@@ -343,7 +344,7 @@ class AztecEditorController: UIViewController {
         navigationController?.navigationBar.isTranslucent = false
     }
     
-
+    
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -521,7 +522,7 @@ class AztecEditorController: UIViewController {
                 UIKeyCommand(title: NSLocalizedString("Underline", comment:"Discoverability title for underline formatting keyboard shortcut."), action: #selector(toggleUnderline), input:"U", modifierFlags: .command),
                 UIKeyCommand(title: NSLocalizedString("Block Quote", comment: "Discoverability title for block quote keyboard shortcut."), action: #selector(toggleBlockquote), input:"Q", modifierFlags:[.command, .alternate]),
                 UIKeyCommand(title: NSLocalizedString("Insert Link", comment: "Discoverability title for insert link keyboard shortcut."), action: #selector(toggleLink), input:"K", modifierFlags:.command),
-                UIKeyCommand(title: NSLocalizedString("Insert Media", comment: "Discoverability title for insert media keyboard shortcut."), action: #selector(showImagePicker), input:"M", modifierFlags:[.command, .alternate]),
+                UIKeyCommand(title: NSLocalizedString("Insert Media", comment: "Discoverability title for insert media keyboard shortcut."), action: #selector(showMediaPicker), input:"M", modifierFlags:[.command, .alternate]),
                 UIKeyCommand(title: NSLocalizedString("Bullet List", comment: "Discoverability title for bullet list keyboard shortcut."), action: #selector(toggleUnorderedList), input:"U", modifierFlags:[.command, .alternate]),
                 UIKeyCommand(title: NSLocalizedString("Numbered List", comment:"Discoverability title for numbered list keyboard shortcut."), action: #selector(toggleOrderedList), input:"O", modifierFlags:[.command, .alternate]),
                 UIKeyCommand(title: NSLocalizedString("Toggle HTML Source ", comment: "Discoverability title for HTML keyboard shortcut."), action: #selector(toggleEditingMode), input:"H", modifierFlags:[.command, .shift])
@@ -810,8 +811,8 @@ extension AztecEditorController {
     }
     
     func showLinkDialog(forURL url: URL?, text: String?, range: NSRange, allowTextEdit: Bool = true) {
- 
-presentLinkAlertController(initialURL: url,
+        
+        presentLinkAlertController(initialURL: url,
                                    initialLinkText: text,
                                    allowTextEdit: true,
                                    onComplete: { [weak self] url, linkText in
@@ -940,7 +941,9 @@ presentLinkAlertController(initialURL: url,
         return false
     }
     
-    @objc func showImagePicker() {
+    @objc func showMediaPicker() {
+        self.mediaInsertRange = richTextView.selectedRange
+        
         view.endEditing(true)
         
         // First alert: Choose media type
@@ -1048,7 +1051,7 @@ presentLinkAlertController(initialURL: url,
         }
         
         toolbar.leadingItemHandler = { [weak self] item in
-            self?.showImagePicker()
+            self?.showMediaPicker()
         }
         
         return toolbar
@@ -1080,7 +1083,7 @@ extension AztecEditorController: UIImagePickerControllerDelegate {
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         dismiss(animated: true, completion: nil)
-        richTextView.becomeFirstResponder()
+        
         guard let mediaType = info[convertFromUIImagePickerControllerInfoKey(UIImagePickerController.InfoKey.mediaType)] as? String else {
             return
         }
@@ -1095,7 +1098,10 @@ extension AztecEditorController: UIImagePickerControllerDelegate {
                 }
                 
                 picker.dismiss(animated: true) {
-                    self.mediaInserter.insertImage(image)
+                    self.mediaInserter.insertImage(
+                        image,
+                        atRange: self.mediaInsertRange ?? self.richTextView.selectedRange
+                    )
                 }
                 
             case typeMovie:
@@ -1104,7 +1110,10 @@ extension AztecEditorController: UIImagePickerControllerDelegate {
                 }
                 
                 picker.dismiss(animated: true) {
-                    self.mediaInserter.insertVideo(videoURL)
+                    self.mediaInserter.insertVideo(
+                        videoURL,
+                        atRange: self.mediaInsertRange ?? self.richTextView.selectedRange
+                    )
                 }
             default:
                 print("Media type not supported: \(mediaType)")

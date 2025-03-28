@@ -30,51 +30,56 @@ class MediaInserter {
         self.attachmentTextAttributes = attachmentTextAttributes
     }
     
-    func insertImage(_ image: UIImage) {
-        let fileURL = image.saveToTemporaryFile()
-        
-        let attachment = richTextView.replaceWithImage(at: richTextView.selectedRange, sourceURL: fileURL, placeHolderImage: image)
-        attachment.size = .full
-        attachment.alignment = ImageAttachment.Alignment.none
-        if let attachmentRange = richTextView.textStorage.ranges(forAttachment: attachment).first {
-            richTextView.setLink(fileURL, inRange: attachmentRange)
-        }
-        
+    func insertImage(_ image: UIImage, atRange range: NSRange) {
         if let uploadCallback = self.uploadCallback {
-            showUploadAlert(for: fileURL, attachment: attachment, uploadCallback: uploadCallback)
-        } else {
-            // Fallback: simulate progress with a timer.
-            let imageID = attachment.identifier
-            let progress = Progress(parent: nil, userInfo: [MediaProgressKey.mediaID: imageID])
-            progress.totalUnitCount = 100
-            Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(MediaInserter.timerFireMethod(_:)), userInfo: progress, repeats: true)
+            let fileURL = image.saveToTemporaryFile()
+            
+            let attachment = richTextView.replaceWithImage(at: range, sourceURL: fileURL, placeHolderImage: image)
+            attachment.size = .full
+            attachment.alignment = ImageAttachment.Alignment.none
+            
+            if let attachmentRange = richTextView.textStorage.ranges(forAttachment: attachment).first {
+                richTextView.setLink(fileURL, inRange: attachmentRange)
+            }
+            
+            showUploadAlert(
+                for: fileURL,
+                attachment: attachment,
+                atRange: range,
+                uploadCallback: uploadCallback
+            )
         }
     }
     
-    func insertVideo(_ videoURL: URL) {
-        let asset = AVURLAsset(url: videoURL, options: nil)
-        let imgGenerator = AVAssetImageGenerator(asset: asset)
-        imgGenerator.appliesPreferredTrackTransform = true
-        guard let cgImage = try? imgGenerator.copyCGImage(at: CMTimeMake(value: 0, timescale: 1), actualTime: nil) else {
-            return
-        }
-        let posterImage = UIImage(cgImage: cgImage)
-        let posterURL = posterImage.saveToTemporaryFile()
-        let attachment = richTextView.replaceWithVideo(at: richTextView.selectedRange, sourceURL: URL(string:"placeholder://")!, posterURL: posterURL, placeHolderImage: posterImage)
-        
+    func insertVideo(_ videoURL: URL, atRange range: NSRange) {
         if let uploadCallback = self.uploadCallback {
-            showUploadAlert(for: videoURL, attachment: attachment, uploadCallback: uploadCallback)
-        } else {
-            let mediaID = attachment.identifier
-            let progress = Progress(parent: nil, userInfo: [MediaProgressKey.mediaID: mediaID, MediaProgressKey.videoURL: videoURL])
-            progress.totalUnitCount = 100
-            Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(MediaInserter.timerFireMethod(_:)), userInfo: progress, repeats: true)
+            let asset = AVURLAsset(url: videoURL, options: nil)
+            let imgGenerator = AVAssetImageGenerator(asset: asset)
+            imgGenerator.appliesPreferredTrackTransform = true
+            
+            guard let cgImage = try? imgGenerator.copyCGImage(at: CMTimeMake(value: 0, timescale: 1), actualTime: nil) else {
+                return
+            }
+            
+            let posterImage = UIImage(cgImage: cgImage)
+            let posterURL = posterImage.saveToTemporaryFile()
+            let attachment = richTextView.replaceWithVideo(
+                at: range,
+                sourceURL: URL(string:"placeholder://")!,
+                posterURL: posterURL,
+                placeHolderImage: posterImage
+            )
+            
+            showUploadAlert(for: videoURL, attachment: attachment, atRange: range, uploadCallback: uploadCallback)
         }
     }
     
-    private func showUploadAlert(for fileURL: URL,
-                                 attachment: MediaAttachment,
-                                 uploadCallback: @escaping (URL, @escaping (Result<String?, PigeonError>) -> Void) -> Void) {
+    private func showUploadAlert(
+        for fileURL: URL,
+        attachment: MediaAttachment,
+        atRange range: NSRange,
+        uploadCallback: @escaping (URL, @escaping (Result<String?, PigeonError>) -> Void) -> Void
+    ) {
         
         let alert = UIAlertController(title: nil, message: "Uploading...\n\n", preferredStyle: .alert)
         
@@ -104,15 +109,13 @@ class MediaInserter {
                             // Check for a valid URL.
                             if let urlStr = uploadedURLString, urlStr.starts(with: "http"), let newURL = URL(string: urlStr) {
                                 // Update the anchor link.
-                                if let attachmentRange = self?.richTextView.textStorage.ranges(forAttachment: attachment).first {
-                                    self?.richTextView.setLink(newURL, inRange: attachmentRange)
-                                }
+                                self?.richTextView.setLink(newURL, inRange: range)
                                 
                                 // Update the source URL for images or videos.
                                 if let imageAttachment = attachment as? ImageAttachment {
-                                    imageAttachment.updateURL(newURL)
+                                    imageAttachment.updateURL(newURL, refreshAsset: true)
                                 } else if let videoAttachment = attachment as? VideoAttachment {
-                                    videoAttachment.updateURL(newURL, refreshAsset: false)
+                                    videoAttachment.updateURL(newURL, refreshAsset: true)
                                 }
                             } else {
                                 self?.handleUploadFailure(withMessage: uploadedURLString, for: attachment)
@@ -120,7 +123,10 @@ class MediaInserter {
                         case .failure(_):
                             self?.handleUploadFailure(for: attachment)
                     }
+                    
                     self?.richTextView.refresh(attachment, overlayUpdateOnly: true)
+                    self?.richTextView.becomeFirstResponder()
+                    self?.richTextView.selectedRange = NSRange.init(location: range.location + 1, length: 0)
                 }
             }
         }
@@ -140,35 +146,6 @@ class MediaInserter {
         if let range = richTextView.textStorage.ranges(forAttachment: attachment).first {
             richTextView.textStorage.replaceCharacters(in: range, with: "")
         }
-    }
-    
-    @objc func timerFireMethod(_ timer: Timer) {
-        guard let progress = timer.userInfo as? Progress,
-              let imageId = progress.userInfo[MediaProgressKey.mediaID] as? String,
-              let attachment = richTextView.attachment(withId: imageId)
-        else {
-            timer.invalidate()
-            return
-        }
-        progress.completedUnitCount += 1
-        
-        attachment.progress = progress.fractionCompleted
-        
-        if mediaErrorMode && progress.fractionCompleted >= 0.25 {
-            timer.invalidate()
-            let message = NSAttributedString(string: "Upload failed!", attributes: attachmentTextAttributes)
-            attachment.message = message
-            attachment.overlayImage = UIImage.systemImage("arrow.clockwise")
-        }
-        if progress.fractionCompleted >= 1 {
-            timer.invalidate()
-            attachment.progress = nil
-            if let videoAttachment = attachment as? VideoAttachment,
-               let videoURL = progress.userInfo[MediaProgressKey.videoURL] as? URL {
-                videoAttachment.updateURL(videoURL, refreshAsset: false)
-            }
-        }
-        richTextView.refresh(attachment, overlayUpdateOnly: true)
     }
     
     // Helper: Finds the top view controller from the key window.
