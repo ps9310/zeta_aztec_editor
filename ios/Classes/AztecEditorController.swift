@@ -195,10 +195,6 @@ class AztecEditorController: UIViewController {
         MediaAttachment.defaultAppearance.progressHeight = 2.0
         MediaAttachment.defaultAppearance.overlayColor = UIColor(red: 46.0/255.0, green: 69.0/255.0, blue: 83.0/255.0, alpha: 0.6)
         
-        // Uncomment to add a border
-        // MediaAttachment.defaultAppearance.overlayBorderWidth = 3.0
-        // MediaAttachment.defaultAppearance.overlayBorderColor = UIColor(red: 0.0/255.0, green: 135.0/255.0, blue: 190.0/255.0, alpha: 0.8)
-        
         edgesForExtendedLayout = UIRectEdge()
         navigationController?.navigationBar.isTranslucent = false
         view.addSubview(editorView)
@@ -803,120 +799,145 @@ extension AztecEditorController {
             linkRange = expandedRange
             linkURL = richTextView.linkURL(forRange: expandedRange)
         }
-        let target = richTextView.linkTarget(forRange: richTextView.selectedRange)
+        
         linkTitle = richTextView.attributedText.attributedSubstring(from: linkRange).string
         let allowTextEdit = !richTextView.attributedText.containsAttachments(in: linkRange)
-        showLinkDialog(forURL: linkURL, text: linkTitle, target: target, range: linkRange, allowTextEdit: allowTextEdit)
+        showLinkDialog(forURL: linkURL, text: linkTitle, range: linkRange, allowTextEdit: allowTextEdit)
     }
     
     func insertMoreAttachment() {
         richTextView.replace(richTextView.selectedRange, withComment: Constants.moreAttachmentText)
     }
     
-    func showLinkDialog(forURL url: URL?, text: String?, target: String?, range: NSRange, allowTextEdit: Bool = true) {
-        let isInsertingNewLink = (url == nil)
-        var urlToUse = url
+    func showLinkDialog(forURL url: URL?, text: String?, range: NSRange, allowTextEdit: Bool = true) {
+ 
+presentLinkAlertController(initialURL: url,
+                                   initialLinkText: text,
+                                   allowTextEdit: true,
+                                   onComplete: { [weak self] url, linkText in
+            // Update your rich text view with the new link.
+            self?.richTextView.setLink(url, title: linkText ?? url.absoluteString, inRange: range)
+        },
+                                   onRemove: { [weak self] in
+            // Remove the link.
+            self?.richTextView.removeLink(inRange: range)
+        },
+                                   onCancel: { [weak self] in
+            // Optionally, refocus your text view.
+            self?.richTextView.becomeFirstResponder()
+        })
+    }
+    
+    func presentLinkAlertController(initialURL: URL?,
+                                    initialLinkText: String?,
+                                    allowTextEdit: Bool,
+                                    onComplete: @escaping (URL, String?) -> Void,
+                                    onRemove: @escaping () -> Void,
+                                    onCancel: @escaping () -> Void) {
+        let isInsertingNewLink = (initialURL == nil)
+        let alertTitle = isInsertingNewLink
+        ? NSLocalizedString("Insert Link", comment: "Insert Link Title")
+        : NSLocalizedString("Update Link", comment: "Update Link Title")
         
-        if isInsertingNewLink {
-            let pasteboard = UIPasteboard.general
-            if let pastedURL = pasteboard.value(forPasteboardType: String(kUTTypeURL)) as? URL {
-                urlToUse = pastedURL
-            }
-        }
-        
-        let insertButtonTitle = isInsertingNewLink ? NSLocalizedString("Insert Link", comment:"Label action for inserting a link on the editor") : NSLocalizedString("Update Link", comment:"Label action for updating a link on the editor")
-        let removeButtonTitle = NSLocalizedString("Remove Link", comment:"Label action for removing a link from the editor")
-        let cancelButtonTitle = NSLocalizedString("Cancel", comment:"Cancel button")
-        
-        let alertController = UIAlertController(title: insertButtonTitle,
-                                                message: nil,
-                                                preferredStyle: .alert)
+        // Create the alert controller in .alert style
+        let alertController = UIAlertController(title: alertTitle, message: nil, preferredStyle: .alert)
         alertController.view.accessibilityIdentifier = "linkModal"
         
+        // Add URL text field
         alertController.addTextField { [weak self] textField in
             textField.clearButtonMode = .always
-            textField.placeholder = NSLocalizedString("URL", comment:"URL text field placeholder")
+            textField.placeholder = NSLocalizedString("URL", comment: "URL text field placeholder")
             textField.keyboardType = .URL
             textField.textContentType = .URL
-            textField.text = urlToUse?.absoluteString
-            textField.addTarget(self, action: #selector(AztecEditorController.alertTextFieldDidChange), for: .editingChanged)
+            textField.text = initialURL?.absoluteString
+            textField.addTarget(self, action: #selector(self?.alertTextFieldDidChange(_:)), for: .editingChanged)
             textField.accessibilityIdentifier = "linkModalURL"
         }
         
+        // Add Link Text field if editing is allowed
         if allowTextEdit {
             alertController.addTextField { textField in
                 textField.clearButtonMode = .always
-                textField.placeholder = NSLocalizedString("Link Text", comment:"Link text field placeholder")
-                textField.isSecureTextEntry = false
-                textField.autocapitalizationType = .sentences
-                textField.autocorrectionType = .default
-                textField.spellCheckingType = .default
-                textField.text = text
+                textField.placeholder = NSLocalizedString("Link Text", comment: "Link text field placeholder")
+                textField.text = initialLinkText
                 textField.accessibilityIdentifier = "linkModalText"
             }
         }
         
-        alertController.addTextField { textField in
-            textField.clearButtonMode = .always
-            textField.placeholder = NSLocalizedString("Target", comment:"Link text field placeholder")
-            textField.isSecureTextEntry = false
-            textField.autocapitalizationType = .sentences
-            textField.autocorrectionType = .default
-            textField.spellCheckingType = .default
-            textField.text = target
-            textField.accessibilityIdentifier = "linkModalTarget"
-        }
-        
-        let insertAction = UIAlertAction(title: insertButtonTitle, style: .default) { [weak self] action in
-            self?.richTextView.becomeFirstResponder()
-            guard let textFields = alertController.textFields else { return }
-            let linkURLField = textFields[0]
-            let linkTextField = textFields[1]
-            let linkTargetField = textFields[2]
-            let linkURLString = linkURLField.text
-            var linkTitle = linkTextField.text
-            let target = linkTargetField.text
+        // Create the Insert/Update action. We assign an accessibilityLabel so our text field change handler can find it.
+        let insertButtonTitle = isInsertingNewLink
+        ? NSLocalizedString("Insert Link", comment:"Insert Link button title")
+        : NSLocalizedString("Update Link", comment:"Update Link button title")
+        let insertAction = UIAlertAction(title: insertButtonTitle, style: .default) { _ in
+            guard let fields = alertController.textFields,
+                  let urlText = fields[0].text,
+                  let url = URL(string: urlText) else { return }
             
-            if linkTitle == nil || linkTitle!.isEmpty {
-                linkTitle = linkURLString
-            }
-            
-            guard let urlString = linkURLString, let url = URL(string: urlString) else { return }
-            if allowTextEdit, let title = linkTitle {
-                self?.richTextView.setLink(url, title: title, target: target, inRange: range)
+            var linkText: String? = nil
+            if allowTextEdit, fields.count > 1 {
+                linkText = fields[1].text
+                if linkText?.isEmpty ?? true {
+                    linkText = urlText
+                }
             } else {
-                self?.richTextView.setLink(url, target: target, inRange: range)
+                linkText = urlText
             }
+            onComplete(url, linkText)
         }
         insertAction.accessibilityLabel = "insertLinkButton"
         
-        let removeAction = UIAlertAction(title: removeButtonTitle, style: .destructive) { [weak self] action in
-            self?.richTextView.becomeFirstResponder()
-            self?.richTextView.removeLink(inRange: range)
-        }
-        
-        let cancelAction = UIAlertAction(title: cancelButtonTitle, style: .cancel) { [weak self] action in
-            self?.richTextView.becomeFirstResponder()
+        // Initially disable the insert action if URL is invalid.
+        if let urlText = alertController.textFields?.first?.text {
+            insertAction.isEnabled = isValidURL(urlText)
+        } else {
+            insertAction.isEnabled = false
         }
         
         alertController.addAction(insertAction)
+        
+        // Add Remove action if updating an existing link
         if !isInsertingNewLink {
+            let removeAction = UIAlertAction(title: NSLocalizedString("Remove Link", comment:"Remove Link button title"), style: .destructive) { _ in
+                onRemove()
+            }
             alertController.addAction(removeAction)
         }
-        alertController.addAction(cancelAction)
         
-        if let text = alertController.textFields?.first?.text {
-            insertAction.isEnabled = !text.isEmpty
+        // Add Cancel action
+        let cancelAction = UIAlertAction(title: NSLocalizedString("Cancel", comment:"Cancel button title"), style: .cancel) { _ in
+            onCancel()
         }
+        alertController.addAction(cancelAction)
         
         present(alertController, animated: true, completion: nil)
     }
     
     @objc func alertTextFieldDidChange(_ textField: UITextField) {
-        guard let alertController = presentedViewController as? UIAlertController,
+        guard let alertController = self.presentedViewController as? UIAlertController,
               let urlFieldText = alertController.textFields?.first?.text,
-              let insertAction = alertController.actions.first else { return }
-        insertAction.isEnabled = !urlFieldText.isEmpty
+              let insertAction = alertController.actions.first(where: { $0.accessibilityLabel == "insertLinkButton" })
+        else { return }
+        
+        insertAction.isEnabled = isValidURL(urlFieldText)
+    }
+    
+    private func isValidURL(_ urlString: String) -> Bool {
+        let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        let lowercased = trimmed.lowercased()
+        // Ensure the URL starts with the proper prefix
+        guard lowercased.hasPrefix("http://") || lowercased.hasPrefix("https://") else {
+            return false
+        }
+        // Now try to create a URL from the string
+        guard let url = URL(string: trimmed) else {
+            return false
+        }
+        // Confirm the scheme is valid
+        if let scheme = url.scheme?.lowercased() {
+            return scheme == "http" || scheme == "https"
+        }
+        return false
     }
     
     @objc func showImagePicker() {
