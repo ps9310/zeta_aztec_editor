@@ -946,7 +946,7 @@ presentLinkAlertController(initialURL: url,
         // First alert: Choose media type
         let mediaTypeAlert = UIAlertController(title: "Choose Media", message: nil, preferredStyle: .actionSheet)
         
-        let photoAction = UIAlertAction(title: "Photo", style: .default) { _ in
+        let photoAction = UIAlertAction(title: "Image", style: .default) { _ in
             self.showSourcePicker(forMediaType: "public.image")
         }
         
