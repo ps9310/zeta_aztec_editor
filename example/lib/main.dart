@@ -46,7 +46,7 @@ class EditorPage extends StatefulWidget {
   _EditorPageState createState() => _EditorPageState();
 }
 
-class _EditorPageState extends State<EditorPage> implements ZetaAztecEditorCallbacks {
+class _EditorPageState extends State<EditorPage> implements ZetaAztecFileCallbacks {
   String _html = '''
   <h3>Heading</h3>
 <p>A paragraph with <strong>strong</strong>, <em>emphasized</em> text. </p>
@@ -57,7 +57,7 @@ class _EditorPageState extends State<EditorPage> implements ZetaAztecEditorCallb
   <li>Four</li>
 </ul>
 <p>This is now very important to get your attention on this topic</p>
-<p><img src="https://picsum.photos/id/237/900/1200" class="alignnone size-full"></p>
+<p><img src="https://picsum.photos/id/237/900/1200" class="alignnone size-full" alt=""></p>
   ''';
 
   EditorConfigSettings _configSettings = EditorConfigSettings(
@@ -113,13 +113,20 @@ class _EditorPageState extends State<EditorPage> implements ZetaAztecEditorCallb
       },
     );
 
-    ZetaAztecEditor().launch(initialHtml: _html, config: config, callback: this).then((value) {
-      if (mounted && value != null) {
-        setState(() {
-          _html = value;
-        });
-      }
-    });
+    final result = await ZetaAztecEditor().launch(
+      initialHtml: _html,
+      config: config,
+      fileCallbacks: this,
+      onHtmlChanged: (value) {
+        debugPrint('EditorPage:onAztecHtmlChanged: $value');
+      },
+    );
+
+    if (mounted && result != null) {
+      setState(() {
+        _html = result;
+      });
+    }
   }
 
   @override
@@ -260,10 +267,5 @@ class _EditorPageState extends State<EditorPage> implements ZetaAztecEditorCallb
   @override
   void onAztecFileDeleted(String filePath) {
     debugPrint('EditorPage:onAztecFileDeleted: $filePath');
-  }
-
-  @override
-  void onAztecHtmlChanged(String data) {
-    debugPrint('EditorPage:onAztecHtmlChanged: $data');
   }
 }

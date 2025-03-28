@@ -1,11 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:zeta_aztec_editor/src/messages.g.dart';
 
 export 'src/messages.g.dart' hide AztecEditorApi, AztecFlutterApi;
 
-abstract class ZetaAztecEditorCallbacks {
+abstract class ZetaAztecFileCallbacks {
   Future<String?> onAztecFileSelected(String filePath);
+
   void onAztecFileDeleted(String filePath);
-  void onAztecHtmlChanged(String data);
 }
 
 class ZetaAztecEditor implements AztecFlutterApi {
@@ -13,7 +14,9 @@ class ZetaAztecEditor implements AztecFlutterApi {
 
   static final ZetaAztecEditor _instance = ZetaAztecEditor._();
 
-  static ZetaAztecEditorCallbacks? _callbacks;
+  static ZetaAztecFileCallbacks? _callbacks;
+
+  static ValueChanged<String>? _onAztecHtmlChanged;
 
   ZetaAztecEditor._();
 
@@ -26,16 +29,19 @@ class ZetaAztecEditor implements AztecFlutterApi {
   Future<String?> launch({
     String? initialHtml,
     required AztecEditorConfig config,
-    required ZetaAztecEditorCallbacks callback,
+    ZetaAztecFileCallbacks? fileCallbacks,
+    ValueChanged<String>? onHtmlChanged,
   }) async {
     try {
       ensureInitialized();
-      _callbacks = callback;
+      _onAztecHtmlChanged = onHtmlChanged;
+      _callbacks = fileCallbacks;
       final result = await _api.launch(initialHtml: initialHtml, config: config);
       return result;
     } catch (e) {
       return initialHtml;
     } finally {
+      _onAztecHtmlChanged = null;
       _callbacks = null;
     }
   }
@@ -52,6 +58,6 @@ class ZetaAztecEditor implements AztecFlutterApi {
 
   @override
   void onAztecHtmlChanged(String data) {
-    _callbacks?.onAztecHtmlChanged(data);
+    _onAztecHtmlChanged?.call(data);
   }
 }
