@@ -30,20 +30,25 @@ class MediaInserter {
         self.attachmentTextAttributes = attachmentTextAttributes
     }
     
-    func insertImage(_ image: UIImage, atRange range: NSRange) {
+    func insertImage(_ imageURL: URL, atRange range: NSRange) {
         if let uploadCallback = self.uploadCallback {
-            let fileURL = image.saveToTemporaryFile()
+            // Load image from URL for placeholder
+            guard let imageData = try? Data(contentsOf: imageURL),
+                  let image = UIImage(data: imageData) else {
+                print("Failed to load image from URL: \(imageURL)")
+                return
+            }
             
-            let attachment = richTextView.replaceWithImage(at: range, sourceURL: fileURL, placeHolderImage: image)
+            let attachment = richTextView.replaceWithImage(at: range, sourceURL: imageURL, placeHolderImage: image)
             attachment.size = .full
             attachment.alignment = ImageAttachment.Alignment.none
             
             if let attachmentRange = richTextView.textStorage.ranges(forAttachment: attachment).first {
-                richTextView.setLink(fileURL, inRange: attachmentRange)
+                richTextView.setLink(imageURL, inRange: attachmentRange)
             }
             
             showUploadAlert(
-                for: fileURL,
+                for: imageURL,
                 attachment: attachment,
                 atRange: range,
                 uploadCallback: uploadCallback

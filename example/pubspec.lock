@@ -898,7 +898,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.0.3"
+    version: "0.0.4"
 sdks:
   dart: ">=3.5.4 <4.0.0"
   flutter: ">=3.24.0"

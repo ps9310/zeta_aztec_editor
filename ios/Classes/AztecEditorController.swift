@@ -1091,17 +1091,30 @@ extension AztecEditorController: UIImagePickerControllerDelegate {
         let typeImage = UTType.image.identifier
         let typeMovie = UTType.movie.identifier
         
+        let tempDirectory = FileManager.default.temporaryDirectory
+        
         switch mediaType {
             case typeImage:
                 guard let image = info[convertFromUIImagePickerControllerInfoKey(UIImagePickerController.InfoKey.originalImage)] as? UIImage else {
                     return
                 }
                 
-                picker.dismiss(animated: true) {
-                    self.mediaInserter.insertImage(
-                        image,
-                        atRange: self.mediaInsertRange ?? self.richTextView.selectedRange
-                    )
+                // Save image to temp directory and pass the URL
+                if let imageData = image.jpegData(compressionQuality: 1.0) {
+                    let filename = UUID().uuidString + ".jpg"
+                    let tempURL = tempDirectory.appendingPathComponent(filename)
+                    
+                    do {
+                        try imageData.write(to: tempURL)
+                        picker.dismiss(animated: true) {
+                            self.mediaInserter.insertImage(
+                                tempURL,
+                                atRange: self.mediaInsertRange ?? self.richTextView.selectedRange
+                            )
+                        }
+                    } catch {
+                        print("Failed to save image to temp directory: \(error)")
+                    }
                 }
                 
             case typeMovie:
@@ -1109,12 +1122,21 @@ extension AztecEditorController: UIImagePickerControllerDelegate {
                     return
                 }
                 
-                picker.dismiss(animated: true) {
-                    self.mediaInserter.insertVideo(
-                        videoURL,
-                        atRange: self.mediaInsertRange ?? self.richTextView.selectedRange
-                    )
+                let filename = UUID().uuidString + ".mov"
+                let tempURL = tempDirectory.appendingPathComponent(filename)
+                
+                do {
+                    try FileManager.default.copyItem(at: videoURL, to: tempURL)
+                    picker.dismiss(animated: true) {
+                        self.mediaInserter.insertVideo(
+                            tempURL,
+                            atRange: self.mediaInsertRange ?? self.richTextView.selectedRange
+                        )
+                    }
+                } catch {
+                    print("Failed to copy video to temp directory: \(error)")
                 }
+                
             default:
                 print("Media type not supported: \(mediaType)")
         }
