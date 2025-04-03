@@ -335,7 +335,7 @@ class AztecEditorActivity : AppCompatActivity(),
         val isDarkMode = isDarkMode()
         val appBarColor = if (isDarkMode) Color.BLACK else Color.WHITE
         val appBarTextColor = if (isDarkMode) Color.WHITE else Color.BLACK
-        val visualEditor = findViewById<AztecText>(R.id.aztec)
+        val visualEditor = findViewById<ZetaAztecText>(R.id.aztec)
         val aztecToolbar = findViewById<AztecToolbar>(R.id.formatting_toolbar)
         val topToolbar = findViewById<Toolbar>(R.id.top_toolbar)
 
@@ -357,6 +357,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
         setTitle(editorConfig?.title ?: "")
 
+        visualEditor.maxLength = editorConfig?.characterLimit?.toInt()
         visualEditor.enableSamsungPredictiveBehaviorOverride()
         visualEditor.setBackgroundColor(appBarColor)
         visualEditor.setTextAppearance(android.R.style.TextAppearance)
@@ -1426,7 +1427,7 @@ class AztecEditorActivity : AppCompatActivity(),
 
     private fun showKeyboard(view: View) {
         view.requestFocus()
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
     }
     // endregion
