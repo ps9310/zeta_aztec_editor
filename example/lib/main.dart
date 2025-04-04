@@ -119,6 +119,9 @@ class _EditorPageState extends State<EditorPage> implements ZetaAztecFileCallbac
       fileCallbacks: this,
       onHtmlChanged: (value) {
         debugPrint('EditorPage:onAztecHtmlChanged: $value');
+        setState(() {
+          _html = value;
+        });
       },
     );
 

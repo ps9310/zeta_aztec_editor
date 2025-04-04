@@ -15,7 +15,7 @@ import io.flutter.plugin.common.PluginRegistry.ActivityResultListener
 /** ZetaAztecEditorPlugin */
 class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, ActivityResultListener {
 
-    private var pendingResult: ((Result<String>) -> Unit)? = null
+    private var pendingResult: ((Result<String?>) -> Unit)? = null
     private var activity: Activity? = null
     private var binaryMessenger: BinaryMessenger? = null
 
@@ -66,9 +66,9 @@ class ZetaAztecEditorPlugin : FlutterPlugin, ActivityAware, AztecEditorApi, Acti
         )
         if (requestCode == AztecEditorActivity.REQUEST_CODE) {
             val result = if (resultCode == Activity.RESULT_OK) {
-                Result.success(data?.getStringExtra("html") ?: "")
+                Result.success(data?.getStringExtra("html"))
             } else {
-                Result.failure(Exception("Editor was cancelled"))
+                Result.success(null)
             }
 
             pendingResult?.invoke(result)
