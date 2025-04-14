@@ -947,7 +947,7 @@ extension AztecEditorController {
         view.endEditing(true)
         
         // First alert: Choose media type
-        let mediaTypeAlert = UIAlertController(title: "Choose Media", message: nil, preferredStyle: .actionSheet)
+        let mediaTypeAlert = UIAlertController(title: "Choose Media", message: "Insert an image or video", preferredStyle: .alert)
         
         let photoAction = UIAlertAction(title: "Image", style: .default) { _ in
             self.showSourcePicker(forMediaType: "public.image")
@@ -967,7 +967,7 @@ extension AztecEditorController {
     }
     
     func showSourcePicker(forMediaType mediaType: String) {
-        let sourceAlert = UIAlertController(title: "Select Source", message: nil, preferredStyle: .actionSheet)
+        let sourceAlert = UIAlertController(title: "Select Source", message: "Choose where to get your media from", preferredStyle: .alert)
         
         let cameraAction = UIAlertAction(title: "Camera", style: .default) { _ in
             self.showPicker(source: .camera, mediaType: mediaType)

@@ -256,7 +256,7 @@ extension TextViewAttachmentDelegateProvider {
         guard let actionCursorPosition = textView.closestPosition(to: position) else { return }
         
         let title = NSLocalizedString("Media Options", comment: "Title for media options")
-        let alertController = UIAlertController(title: title, message: nil, preferredStyle: .actionSheet)
+        let alertController = UIAlertController(title: title, message: nil, preferredStyle: .alert)
         
         // Dismiss action (cancel)
         let dismissAction = UIAlertAction(title: NSLocalizedString("Dismiss", comment: "Dismiss options"), style: .cancel) { _ in

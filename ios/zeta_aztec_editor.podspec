@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'zeta_aztec_editor'
-  s.version          = '0.0.4'
+  s.version          = '0.0.5'
   s.summary          = 'Flutter plugin that bridges to native Aztec editors on iOS and Android.'
   s.description      = <<-DESC
 Flutter plugin that bridges to native Aztec editors on iOS and Android.
