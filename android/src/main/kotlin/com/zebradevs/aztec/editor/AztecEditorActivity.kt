@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -42,6 +43,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.forEach
 import androidx.core.view.isVisible
 import com.zebradevs.aztec.editor.messages.AztecEditorTheme
@@ -148,6 +151,8 @@ class AztecEditorActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_aztec_editor)
         Log.d("AztecEditorActivity", "onCreate: Content view set")
+
+        WindowCompat.setDecorFitsSystemWindows(window, true)
 
         setupBackPressHandler()
         setupEditorConfiguration()
@@ -330,6 +335,7 @@ class AztecEditorActivity : AppCompatActivity(),
         }
     }
 
+    @SuppressLint("UseKtx")
     private fun setupAztecEditor(savedInstanceState: Bundle?) {
         Log.d("AztecEditorActivity", "setupAztecEditor: Initializing Aztec editor")
         val isDarkMode = isDarkMode()
@@ -344,6 +350,11 @@ class AztecEditorActivity : AppCompatActivity(),
         topToolbar.setBackgroundColor(appBarColor)
         topToolbar.setTitleTextColor(appBarTextColor)
         topToolbar.setSubtitleTextColor(appBarTextColor)
+
+        window.setBackgroundDrawable(ColorDrawable(appBarColor))
+        val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+        insetsController.isAppearanceLightStatusBars = !isDarkMode //
+
         setSupportActionBar(topToolbar)
         Log.d("AztecEditorActivity", "setupAztecEditor: Top toolbar configured")
 
