@@ -28,7 +28,7 @@ PODS:
   - WordPress-Aztec-iOS (1.20.0)
   - WordPress-Editor-iOS (1.20.0):
     - WordPress-Aztec-iOS (= 1.20.0)
-  - zeta_aztec_editor (0.0.1):
+  - zeta_aztec_editor (0.0.5):
     - Flutter
     - WordPress-Aztec-iOS (= 1.20.0)
     - WordPress-Editor-iOS (= 1.20.0)
@@ -92,7 +92,7 @@ SPEC CHECKSUMS:
   webview_flutter_wkwebview: a4af96a051138e28e29f60101d094683b9f82188
   WordPress-Aztec-iOS: ce217a896709e92705140b0d771861b3214752e4
   WordPress-Editor-iOS: 08b693af2ca4aeb4b0f009b9eb04bdee652f3261
-  zeta_aztec_editor: b6a060880f86e224935bcc170bcca273739dcde0
+  zeta_aztec_editor: abaf746c1d2248d48c593b69ca2663eb66c87cb7
 
 PODFILE CHECKSUM: 9c46fd01abff66081b39f5fa5767b3f1d0b11d76
 
