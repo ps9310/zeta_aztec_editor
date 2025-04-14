@@ -63,7 +63,7 @@ class _EditorPageState extends State<EditorPage> implements ZetaAztecFileCallbac
   EditorConfigSettings _configSettings = EditorConfigSettings(
     placeholder: 'Hint from flutter...',
     title: 'Add Instructions',
-    characterLimit: 150,
+    characterLimit: 300,
     authToken: 'lksjdhfisdujkmspodfnjdkg',
     simulateUploadSuccess: true,
   );
